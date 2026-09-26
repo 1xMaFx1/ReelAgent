@@ -14,6 +14,9 @@ class OllamaProvider(GeminiProvider):
     # Reuse the provider-independent prompts and public generation methods.
     async def ask(self, prompt: str, model: type[T]) -> T:
         self.settings.require_cloud()
+        prompt += "\nJSON schema (соблюдай все ограничения длины, числа сцен и полей): " + json.dumps(
+            model.model_json_schema(), ensure_ascii=False
+        )
         instruction = prompt
         for attempt in range(3):
             try:
@@ -40,7 +43,9 @@ class OllamaProvider(GeminiProvider):
                     else type(error).__name__
                 )
                 instruction = prompt + " Исправь ошибки предыдущего ответа: " + details
-                logging.getLogger(__name__).warning("Cloud model JSON repair %s/2", attempt)
+                logging.getLogger(__name__).warning(
+                    "Cloud model validation attempt %s/3: %s", attempt + 1, details
+                )
             except httpx.HTTPError:
                 if attempt == 2:
                     raise RuntimeError("Cloud model unavailable after 3 attempts") from None
