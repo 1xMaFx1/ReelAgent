@@ -144,7 +144,7 @@ def download(repo: str, run_id: int) -> Path:
         raise RuntimeError("Неожиданная структура архива ролика")
     target = ROOT / "output" / source.parent.name
     target.mkdir(parents=True, exist_ok=True)
-    for name in ("reel.mp4", "metadata.json", "subtitles.ass"):
+    for name in ("reel.mp4", "metadata.json", "subtitles.ass", "preview.jpg"):
         if (source.parent / name).exists():
             shutil.copy2(source.parent / name, target / name)
     return target / "reel.mp4"

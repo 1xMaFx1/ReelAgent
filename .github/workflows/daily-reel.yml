@@ -75,6 +75,8 @@ jobs:
         env:
           REEL_COMMAND: ${{ inputs.mode || 'run' }}
         run: python -m app.main "$REEL_COMMAND"
+      - name: Create downloadable preview
+        run: python -m scripts.preview
       - name: Save history and current video even if publication failed
         if: always() && steps.state.outcome == 'success'
         uses: actions/upload-artifact@v4
