@@ -52,11 +52,15 @@ def safari(url: str) -> None:
 def setup(repo: str) -> None:
     print("Ключи будут отправлены только в GitHub Secrets вашего ReelAgent.")
     print("Ввод скрыт. Ключи не сохраняются в файлах и не попадают в публичный код.")
-    print("Для Gemini используйте проект Free tier без подключённого биллинга.")
-    for name, url in (
-        ("GEMINI_API_KEY", "https://aistudio.google.com/apikey"),
-        ("PEXELS_API_KEY", "https://www.pexels.com/api/"),
-    ):
+    variables = json.loads(gh("variable", "list", "--repo", repo, "--json", "name,value"))
+    provider = next((v["value"] for v in variables if v["name"] == "LLM_PROVIDER"), "gemini")
+    keys = [("PEXELS_API_KEY", "https://www.pexels.com/api/")]
+    if provider != "ollama":
+        print("Для Gemini используйте проект Free tier без подключённого биллинга.")
+        keys.insert(0, ("GEMINI_API_KEY", "https://aistudio.google.com/apikey"))
+    else:
+        print("Облачной модели Ollama не нужен API-ключ.")
+    for name, url in keys:
         print(f"\n{name}: {url}")
         value = getpass.getpass("Вставьте ключ (Enter — оставить существующий): ").strip()
         if value:

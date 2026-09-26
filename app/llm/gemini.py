@@ -111,11 +111,15 @@ class GeminiProvider:
             Script,
         )
         review = await self.ask(
-            "Проверь соблюдение тематических и безопасностных ограничений для сценария. "
-            "safe=false при нарушении. Сценарий: " + script.text,
+            "Проверь сценарий: обычные научные факты, описание устройства техники и космоса "
+            "разрешены. safe=true, если нет запрещённого содержания. safe=false только при "
+            "наличии политики, медицинских советов, финансовых обещаний, инструкций "
+            "причинения вреда, ненависти или контента для взрослых. В reason объясни решение. "
+            "Сценарий: " + script.text,
             SafetyReview,
         )
         if not review.safe:
+            logging.getLogger(__name__).warning("Script review rejected: %s", review.reason)
             raise ValueError("Script rejected by content review")
         return script
 
