@@ -1,0 +1,8 @@
+-c constraints.txt
+pydantic>=2.10,<3
+pydantic-settings>=2.7,<3
+httpx>=0.28,<1
+typer>=0.15,<1
+tenacity>=9,<10
+edge-tts>=7.2,<8
+mutagen>=1.47,<2

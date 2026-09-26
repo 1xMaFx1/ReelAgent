@@ -1,0 +1,25 @@
+{
+  "script": {
+    "topic": "Почему на МКС можно увидеть шестнадцать рассветов за сутки",
+    "hook": "Шестнадцать рассветов за сутки?",
+    "scenes": [
+      {"id": 1, "narration": "На Земле мы привыкли к одному восходу. Но на Международной космической станции картина совсем другая.", "visual_query": "earth horizon", "duration": 7},
+      {"id": 2, "narration": "Станция летит со скоростью около двадцати восьми тысяч километров в час. Полный оборот вокруг планеты занимает примерно девяносто минут.", "visual_query": "earth coast", "duration": 10},
+      {"id": 3, "narration": "За наши обычные сутки получается около шестнадцати витков. А вместе с ними — примерно шестнадцать рассветов и столько же закатов.", "visual_query": "earth orbital view", "duration": 10},
+      {"id": 4, "narration": "Станция снова и снова выходит из земной тени на освещённую сторону. Поэтому смена дня и ночи здесь происходит гораздо чаще.", "visual_query": "earth clouds", "duration": 9}
+    ],
+    "ending": "Один земной день — целая коллекция рассветов на орбите."
+  },
+  "metadata": {
+    "title": "16 рассветов за сутки: как это возможно на МКС?",
+    "description": "МКС совершает оборот вокруг Земли примерно за 90 минут. За сутки экипаж может увидеть около 16 рассветов и закатов.\n\nКадры: NASA, HD Earth Views from Space — https://svs.gsfc.nasa.gov/10766\nИсточник фактов: https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/\nИллюстративная подборка архивных орбитальных кадров NASA. Русская синтетическая озвучка.",
+    "hashtags": ["#космос", "#МКС", "#наука", "#Shorts"]
+  },
+  "clips": [
+    {"query": "earth horizon", "url": "https://svs.gsfc.nasa.gov/vis/a010000/a010700/a010766/Earth_View_limb_1.webmhd.webm", "credit": "NASA", "source_page": "https://svs.gsfc.nasa.gov/10766"},
+    {"query": "earth coast", "url": "https://svs.gsfc.nasa.gov/vis/a010000/a010700/a010766/Earth_View_Coast2.webmhd.webm", "credit": "NASA", "source_page": "https://svs.gsfc.nasa.gov/10766"},
+    {"query": "earth orbital view", "url": "https://svs.gsfc.nasa.gov/vis/a010000/a010700/a010766/Earth_View_Ocean_and_Land_limb.webmhd.webm", "credit": "NASA", "source_page": "https://svs.gsfc.nasa.gov/10766"},
+    {"query": "earth clouds", "url": "https://svs.gsfc.nasa.gov/vis/a010000/a010700/a010766/Earth_View_Clouds_and_Water_Hurricane.webmhd.webm", "credit": "NASA", "source_page": "https://svs.gsfc.nasa.gov/10766"}
+  ],
+  "fact_sources": ["https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/"]
+}

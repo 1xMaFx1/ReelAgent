@@ -1,0 +1,10 @@
+services:
+  reelagent:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./assets/music:/app/assets/music:ro
+    command: run
