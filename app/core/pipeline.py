@@ -13,6 +13,7 @@ from app.core.episode import Episode, EpisodeScriptProvider, EpisodeVideoProvide
 from app.core.models import Metadata, Status
 from app.core.timing import fit_timing
 from app.llm.gemini import GeminiProvider
+from app.llm.ollama import OllamaProvider
 from app.media.pexels import PexelsVideoProvider
 from app.publishers.instagram import InstagramPublisher
 from app.publishers.youtube import YouTubePublisher
@@ -78,7 +79,13 @@ class Pipeline:
         rendered = False
         try:
             db.update(video_id, status=Status.GENERATING, error_message=None)
-            llm = EpisodeScriptProvider(episode) if episode else GeminiProvider(s, client)
+            llm = (
+                EpisodeScriptProvider(episode)
+                if episode
+                else OllamaProvider(s, client)
+                if s.llm_provider == "ollama"
+                else GeminiProvider(s, client)
+            )
             recent = db.recent_topics()
             topic = None
             for _ in range(3):
@@ -91,7 +98,7 @@ class Pipeline:
                     topic = proposal
                     break
             if topic is None:
-                raise ValueError("Gemini repeated recent topics three times")
+                raise ValueError("LLM repeated recent topics three times")
             db.add_topic(topic.topic)
             log.info("Topic: %s", topic.topic)
             script = await llm.generate_script(topic)
@@ -135,7 +142,7 @@ class Pipeline:
                 ],
                 "duration": duration,
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "content_mode": "reviewed_episode" if episode else "gemini",
+                "content_mode": "reviewed_episode" if episode else s.llm_provider,
                 "fact_sources": episode.fact_sources if episode else [],
                 "youtube": None,
                 "instagram": None,

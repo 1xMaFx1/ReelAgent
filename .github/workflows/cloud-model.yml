@@ -1,0 +1,35 @@
+name: Cloud Model Check
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENV: cloud
+      LLM_PROVIDER: ollama
+      OLLAMA_MODEL: qwen3:4b
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Start CPU model in cloud
+        run: |
+          docker run -d --name reelagent-ollama -p 127.0.0.1:11434:11434 ollama/ollama:latest
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:11434/api/version; then break; fi
+            sleep 2
+          done
+          docker exec reelagent-ollama ollama pull "$OLLAMA_MODEL"
+      - name: Generate and validate a real Russian draft
+        run: python -m scripts.check_cloud_model
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-model-draft
+          path: model-check/
+          retention-days: 1

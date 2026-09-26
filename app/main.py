@@ -10,6 +10,7 @@ from app.config import Settings
 from app.core.logger import setup_logging
 from app.core.pipeline import Pipeline
 from app.llm.gemini import GeminiProvider
+from app.llm.ollama import OllamaProvider
 from app.media.pexels import PexelsVideoProvider
 from app.tts.edge_tts import EdgeTTSProvider
 
@@ -59,12 +60,13 @@ def run() -> None:
 
 @app.command("test-llm")
 def test_llm() -> None:
-    """Test Gemini without rendering or publishing."""
+    """Test the selected model without rendering or publishing."""
     s = settings()
 
     async def check():
         async with httpx.AsyncClient(timeout=90) as client:
-            topic = await GeminiProvider(s, client).generate_topic([])
+            provider = OllamaProvider if s.llm_provider == "ollama" else GeminiProvider
+            topic = await provider(s, client).generate_topic([])
             typer.echo(topic.model_dump_json(indent=2))
 
     execute(check())

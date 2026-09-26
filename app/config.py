@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model: str = "gemini-2.5-flash"
+    llm_provider: Literal["gemini", "ollama"] = "gemini"
+    ollama_model: str = "qwen3:4b"
     pexels_api_key: SecretStr = SecretStr("")
     tts_voice: str = "ru-RU-DmitryNeural"
     video_width: int = Field(default=1080, ge=180)
@@ -63,7 +65,11 @@ class Settings(BaseSettings):
     def require_generation_keys(self) -> None:
         missing = [
             name
-            for name in ("gemini_api_key", "pexels_api_key")
+            for name in (
+                ("gemini_api_key", "pexels_api_key")
+                if self.llm_provider == "gemini"
+                else ("pexels_api_key",)
+            )
             if not getattr(self, name).get_secret_value()
         ]
         if missing:

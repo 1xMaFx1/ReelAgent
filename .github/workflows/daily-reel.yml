@@ -27,6 +27,8 @@ jobs:
     timeout-minutes: 45
     env:
       APP_ENV: cloud
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+      OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen3:4b' }}
       EPISODE_FILE: ${{ vars.EPISODE_FILE || '' }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
@@ -55,6 +57,15 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
       - name: Install Python dependencies
         run: pip install -r requirements.txt
+      - name: Start free open model on cloud CPU
+        if: env.LLM_PROVIDER == 'ollama' && env.EPISODE_FILE == ''
+        run: |
+          docker run -d --name reelagent-ollama -p 127.0.0.1:11434:11434 ollama/ollama:latest
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:11434/api/version; then break; fi
+            sleep 2
+          done
+          docker exec reelagent-ollama ollama pull "$OLLAMA_MODEL"
       - name: Restore durable daily state
         id: state
         env:

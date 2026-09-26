@@ -150,6 +150,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--setup", action="store_true")
     parser.add_argument("--generate-only", action="store_true")
+    parser.add_argument("--no-open", action="store_true", help="Download without opening a browser")
     args = parser.parse_args()
     repo = repository()
     gh("api", "user", "--jq", ".login")
@@ -181,7 +182,8 @@ def main() -> None:
         print("Ход работы: " + run["url"], flush=True)
         state = wait_run(repo, run)
         if state["conclusion"] != "success":
-            safari(state["url"])
+            if not args.no_open:
+                safari(state["url"])
             raise RuntimeError("Облачный запуск завершился с ошибкой. Журнал открыт в Safari.")
         video = download(repo, run["databaseId"])
         meta = json.loads(video.with_name("metadata.json").read_text())
@@ -193,7 +195,8 @@ def main() -> None:
                 print(f"{name}: публикация требует проверки; готовый MP4 сохранён")
             else:
                 print(f"{name}: публикация не настроена или отключена")
-        safari(video.as_uri())
+        if not args.no_open:
+            safari(video.as_uri())
 
 
 if __name__ == "__main__":
