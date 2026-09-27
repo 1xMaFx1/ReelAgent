@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -46,11 +47,11 @@ class Pipeline:
 
     async def _run(self, db: Database, client: httpx.AsyncClient, publish: bool) -> Path | None:
         s = self.settings
-        day = datetime.now(timezone.utc).date().isoformat()
+        day = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
         output = s.path(f"output/{day}")
         video, metadata_path = output / "reel.mp4", output / "metadata.json"
         existing = db.today(day)
-        log.info("Pipeline start: %s (UTC)", day)
+        log.info("Pipeline start: %s (Europe/Simferopol)", day)
         completed = {Status.READY, Status.SCHEDULED, Status.PUBLISHED, Status.PARTIALLY_PUBLISHED}
         if existing and existing["status"] in completed:
             if video.exists() and metadata_path.exists():

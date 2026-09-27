@@ -25,6 +25,7 @@ def test_deliver(tmp_path, monkeypatch):
 
 
 def test_no_stale_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(receiver, "request_backup", lambda *args: None)
     monkeypatch.setattr(receiver, "ROOT", tmp_path)
     monkeypatch.setattr(receiver, "repository", lambda: "owner/repo")
     monkeypatch.setattr(
@@ -38,6 +39,26 @@ def test_no_stale_run(tmp_path, monkeypatch):
         receiver, "download", lambda *args: (_ for _ in ()).throw(AssertionError("stale download"))
     )
     receiver.main()
+
+
+def test_backup_respects_pause_and_requests_once(tmp_path, monkeypatch):
+    now = datetime(2026, 9, 27, 6, 35, tzinfo=ZoneInfo("Europe/Simferopol"))
+    calls = []
+    enabled = "false"
+
+    def fake_gh(*args):
+        calls.append(args)
+        if args[0] == "variable":
+            return enabled
+        return json.dumps({"state": "active"})
+
+    monkeypatch.setattr(receiver, "gh", fake_gh)
+    receiver.request_backup("a/b", [], now, tmp_path)
+    assert not (tmp_path / "backup-request-day").exists()
+    enabled = "true"
+    receiver.request_backup("a/b", [], now, tmp_path)
+    receiver.request_backup("a/b", [], now, tmp_path)
+    assert sum(args[:2] == ("workflow", "run") for args in calls) == 1
 
 
 def test_idle_after_delivery(tmp_path, monkeypatch):

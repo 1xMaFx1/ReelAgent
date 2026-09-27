@@ -10,6 +10,41 @@ from zoneinfo import ZoneInfo
 from scripts.launch import ROOT, download, gh, repository
 
 
+def request_backup(repo: str, runs: list[dict], now: datetime, local: Path) -> None:
+    """One morning recovery if GitHub skipped its timers; respect explicit pauses."""
+    if not 390 <= now.hour * 60 + now.minute <= 420:
+        return
+    today = now.date().isoformat()
+    marker = local / "backup-request-day"
+    if marker.exists() and marker.read_text() == today:
+        return
+    if any(not run["conclusion"] for run in runs):
+        return
+    enabled = gh("variable", "get", "DAILY_ENABLED", "--repo", repo).strip()
+    if enabled != "true":
+        return
+    workflow = json.loads(gh("api", f"repos/{repo}/actions/workflows/daily-reel.yml"))
+    if workflow["state"] == "disabled_manually":
+        return
+    if workflow["state"] == "disabled_inactivity":
+        gh("workflow", "enable", "daily-reel.yml", "--repo", repo)
+    elif workflow["state"] != "active":
+        return
+    marker.write_text(today)
+    gh(
+        "workflow",
+        "run",
+        "daily-reel.yml",
+        "--repo",
+        repo,
+        "--field",
+        "mode=generate",
+        "--field",
+        "request_id=morning-backup-" + today,
+    )
+    print(f"{now.isoformat()}: Запрошена резервная облачная сборка", flush=True)
+
+
 def deliver(video: Path, run_id: int | None = None) -> Path:
     metadata = json.loads(video.with_name("metadata.json").read_text(encoding="utf-8"))
     target = ROOT / "Готовые ролики" / video.parent.name
@@ -77,6 +112,7 @@ def main() -> None:
             shutil.rmtree(local / "downloads" / str(run["databaseId"]), ignore_errors=True)
             print(f"{datetime.now().isoformat()}: Сохранено {result}", flush=True)
             return
+        request_backup(repo, runs, datetime.now(ZoneInfo("Europe/Simferopol")), local)
 
 
 if __name__ == "__main__":

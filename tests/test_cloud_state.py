@@ -1,7 +1,8 @@
 import asyncio
 import io
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -13,7 +14,7 @@ def test_restore_redirect_and_current_day_only(tmp_path, monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_RUN_ID", "22")
     monkeypatch.setenv("GH_TOKEN", "private-test-token")
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
     body = io.BytesIO()
     with zipfile.ZipFile(body, "w") as archive:
         archive.writestr("data/reelagent.db", b"fake-state")

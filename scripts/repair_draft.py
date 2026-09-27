@@ -3,12 +3,13 @@
 import json
 import shutil
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 def main():
-    day = datetime.now(timezone.utc).date().isoformat()
+    day = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
     output = Path("output") / day
     metadata = output / "metadata.json"
     if metadata.exists():

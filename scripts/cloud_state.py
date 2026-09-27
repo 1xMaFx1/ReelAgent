@@ -4,8 +4,9 @@ import asyncio
 import io
 import os
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -49,7 +50,7 @@ async def main() -> None:
             # Never forward the GitHub token to the signed object-storage URL.
             response = await client.get(response.headers["location"], follow_redirects=True)
         response.raise_for_status()
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
         with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
             if "data/reelagent.db" not in archive.namelist():
                 raise RuntimeError("State artifact does not contain SQLite history")
@@ -69,7 +70,7 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
     if os.environ.get("GITHUB_OUTPUT"):
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
         ready = Path(f"output/{today}/reel.mp4").is_file()
         with open(os.environ["GITHUB_OUTPUT"], "a") as handle:
             handle.write(f"ready={str(ready).lower()}\n")
