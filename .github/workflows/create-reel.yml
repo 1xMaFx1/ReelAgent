@@ -1,0 +1,45 @@
+name: Create Reel
+run-name: ReelAgent ${{ inputs.request_id || github.run_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: 'Identifier from the one-click app'
+        type: string
+        required: false
+permissions:
+  contents: write
+concurrency:
+  group: reelagent-create
+  cancel-in-progress: false
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENV: cloud
+      CONTENT_MODE: prompt_queue
+      PROMPT_QUEUE_FILE: prompts/current-week.json
+      GH_TOKEN: ${{ github.token }}
+      REQUEST_ID: ${{ inputs.request_id }}
+      TTS_VOICE: ru-RU-DmitryNeural
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Install renderer
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Create next reel and prepare download
+        run: python -m scripts.create_next
+      - name: Save failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ github.run_id }}
+          path: logs/
+          retention-days: 1
+          if-no-files-found: ignore

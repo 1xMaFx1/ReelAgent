@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen2.5:7b"
     content_brief_file: Path | None = None
     run_slot: str = ""
-    content_mode: Literal["autonomous", "prompt_queue"] = "autonomous"
+    content_mode: Literal["prompt_queue"] = "prompt_queue"
     prompt_queue_file: Path = Path("prompts/current-week.json")
     pexels_api_key: SecretStr = SecretStr("")
     media_provider: Literal["pexels", "nasa"] = "pexels"
@@ -30,27 +30,6 @@ class Settings(BaseSettings):
     subtitle_margin_v: int = Field(default=350, ge=100, le=600)
     subtitle_chars_per_line: int = Field(default=26, ge=12, le=32)
     music_volume: float = Field(default=0.10, ge=0.08, le=0.12)
-    youtube_client_id: SecretStr = SecretStr("")
-    youtube_client_secret: SecretStr = SecretStr("")
-    youtube_refresh_token: SecretStr = SecretStr("")
-    youtube_privacy_status: Literal["public", "private", "unlisted"] = "public"
-    youtube_publisher: Literal["direct", "buffer"] = "direct"
-    youtube_channel_id: str = "UCr74LNUyePqX4CLS9sI5IPg"
-    buffer_api_key: SecretStr = SecretStr("")
-    buffer_channel_id: str = ""
-    publication_timezone: str = "Europe/Simferopol"
-    publication_hour: int = Field(default=8, ge=0, le=23)
-    publication_minute: int = Field(default=0, ge=0, le=59)
-    instagram_access_token: SecretStr = SecretStr("")
-    instagram_account_id: str = ""
-    instagram_username: str = "mateushstameska"
-    instagram_api_version: str = "v24.0"
-    cloudinary_cloud_name: str = ""
-    cloudinary_api_key: SecretStr = SecretStr("")
-    cloudinary_api_secret: SecretStr = SecretStr("")
-    auto_publish_youtube: bool = False
-    auto_publish_instagram: bool = False
-    dry_run: bool = True
     allow_cta: bool = False
     episode_file: Path | None = None
     base_dir: Path = Path(".")

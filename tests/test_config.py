@@ -6,7 +6,8 @@ from app.config import Settings
 
 def test_safe_defaults():
     s = Settings(_env_file=None)
-    assert s.dry_run and not s.auto_publish_youtube and not s.auto_publish_instagram
+    assert not hasattr(s, "auto_publish_instagram")
+    assert not hasattr(s, "auto_publish_youtube")
     assert s.app_env == "local"
 
 
@@ -14,7 +15,8 @@ def test_env(monkeypatch):
     monkeypatch.setenv("TTS_VOICE", "ru-RU-SvetlanaNeural")
     monkeypatch.setenv("DRY_RUN", "false")
     s = Settings(_env_file=None)
-    assert s.tts_voice == "ru-RU-SvetlanaNeural" and not s.dry_run
+    assert s.tts_voice == "ru-RU-SvetlanaNeural"
+    assert not hasattr(s, "dry_run")
 
 
 def test_secrets_hidden():

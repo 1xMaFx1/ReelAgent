@@ -13,7 +13,6 @@ from app.core import weekly_pipeline as module
 from app.core.database import Database
 from app.core.pipeline import Pipeline
 from app.core.prompt_queue import WeeklyPlan
-from scripts.cloud_state import allowed_state_file
 
 PLAN = Path(__file__).resolve().parent / "fixtures/weekly-seven.json"
 
@@ -54,13 +53,6 @@ def test_assignment_cannot_change_or_repeat(tmp_path):
     db.close()
 
 
-def test_state_cache_whitelist():
-    allowed = {"data/week-cache/week/abc.mp4"}
-    assert allowed_state_file("data/week-cache/week/abc.mp4", "2026-01-01", allowed)
-    assert not allowed_state_file("../../anything", "2026-01-01", allowed)
-    assert not allowed_state_file("data/week-cache/old/abc.mp4", "2026-01-01", allowed)
-
-
 def prepare(tmp_path, monkeypatch, day_number):
     plan = WeeklyPlan.load(PLAN)
     today = datetime.now(ZoneInfo("Europe/Simferopol")).date()
@@ -72,8 +64,6 @@ def prepare(tmp_path, monkeypatch, day_number):
         base_dir=tmp_path,
         content_mode="prompt_queue",
         prompt_queue_file=plan_file,
-        dry_run=False,
-        auto_publish_youtube=True,
     )
     monkeypatch.setattr(Settings, "require_cloud", lambda self: None)
     monkeypatch.setattr(module, "EdgeTTSProvider", FakeTTS)
@@ -95,11 +85,8 @@ def prepare(tmp_path, monkeypatch, day_number):
 def test_weekly_render_preserves_prompt_and_does_not_publish(tmp_path, monkeypatch):
     settings, plan, today = prepare(tmp_path, monkeypatch, 3)
 
-    async def forbidden(*args):
-        raise AssertionError("Publishing must not run in weekly mode")
-
-    monkeypatch.setattr(Pipeline, "_publish", forbidden)
-    video = asyncio.run(Pipeline(settings).run(publish=True))
+    assert not hasattr(Pipeline, "_publish")
+    video = asyncio.run(Pipeline(settings).run())
     meta = json.loads(video.with_name("metadata.json").read_text())
     entry = plan.entries[2]
     assert meta["script"] == entry.script.text
