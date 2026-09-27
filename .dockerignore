@@ -1,9 +1,0 @@
-.env
-.git
-.venv
-__pycache__
-data
-output
-logs
-.pytest_cache
-.local
