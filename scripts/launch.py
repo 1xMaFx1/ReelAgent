@@ -2,7 +2,6 @@
 
 import argparse
 import fcntl
-import getpass
 import json
 import re
 import shutil
@@ -11,7 +10,6 @@ import sys
 import time
 import uuid
 from pathlib import Path
-from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -50,70 +48,9 @@ def safari(url: str) -> None:
         print(url)
 
 
-def connect_buffer(repo: str, key: str) -> None:
-    def query(text: str, variables: dict | None = None) -> dict:
-        req = Request(
-            "https://api.buffer.com",
-            data=json.dumps({"query": text, "variables": variables or {}}).encode(),
-            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-        )
-        with urlopen(req, timeout=60) as response:
-            result = json.load(response)
-        if result.get("errors"):
-            raise RuntimeError("Buffer отклонил запрос. Проверьте ключ и подключение канала.")
-        return result["data"]
-
-    organizations = query("{account{organizations{id}}}")["account"]["organizations"]
-    matches = []
-    for organization in organizations:
-        result = query(
-            "query($input:ChannelsInput!){channels(input:$input){id service serviceId isDisconnected}}",
-            {"input": {"organizationId": organization["id"]}},
-        )
-        matches.extend(
-            channel
-            for channel in result["channels"]
-            if channel["service"] == "youtube"
-            and channel["serviceId"] == "UCr74LNUyePqX4CLS9sI5IPg"
-            and not channel["isDisconnected"]
-        )
-    if len(matches) != 1:
-        raise RuntimeError("В Buffer не найден однозначно ваш подключённый YouTube-канал.")
-    gh("variable", "set", "BUFFER_CHANNEL_ID", "--repo", repo, "--body", matches[0]["id"])
-    print("YouTube-канал проверен и выбран автоматически.")
-
-
 def setup(repo: str) -> None:
     print("Для создания роликов ключи не нужны: облачная модель Ollama и библиотека NASA.")
     print("GitHub подключён. Автопубликация выключена.")
-    return
-    print("Ключи будут отправлены только в GitHub Secrets вашего ReelAgent.")
-    print("Ввод скрыт. Ключи не сохраняются в файлах и не попадают в публичный код.")
-    variables = json.loads(gh("variable", "list", "--repo", repo, "--json", "name,value"))
-    provider = next((v["value"] for v in variables if v["name"] == "LLM_PROVIDER"), "gemini")
-    keys = [("PEXELS_API_KEY", "https://www.pexels.com/api/")]
-    keys.extend(
-        [
-            ("BUFFER_API_KEY", "https://publish.buffer.com/settings/api"),
-            ("CLOUDINARY_CLOUD_NAME", "https://console.cloudinary.com/"),
-            ("CLOUDINARY_API_KEY", "https://console.cloudinary.com/"),
-            ("CLOUDINARY_API_SECRET", "https://console.cloudinary.com/"),
-        ]
-    )
-    if provider != "ollama":
-        print("Для Gemini используйте проект Free tier без подключённого биллинга.")
-        keys.insert(0, ("GEMINI_API_KEY", "https://aistudio.google.com/apikey"))
-    else:
-        print("Облачной модели Ollama не нужен API-ключ.")
-    for name, url in keys:
-        print(f"\n{name}: {url}")
-        value = getpass.getpass("Вставьте ключ (Enter — оставить существующий): ").strip()
-        if value:
-            gh("secret", "set", name, "--repo", repo, input_text=value)
-            print("Сохранено в GitHub Secrets.")
-            if name == "BUFFER_API_KEY":
-                connect_buffer(repo, value)
-    print("\nГотово. Запуск: файл «Запустить ReelAgent.command».")
 
 
 def find_run(repo: str, request_id: str) -> dict:
@@ -237,6 +174,9 @@ def main() -> None:
                 safari(state["url"])
             raise RuntimeError("Облачный запуск завершился с ошибкой. Журнал открыт в Safari.")
         video = download(repo, run["databaseId"])
+        from scripts.auto_download import deliver
+
+        video = deliver(video)
         meta = json.loads(video.with_name("metadata.json").read_text())
         print("\nГотово: " + str(video))
         for name in ("youtube", "instagram"):

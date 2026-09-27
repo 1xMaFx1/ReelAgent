@@ -20,7 +20,7 @@ def nasa_url(url: str) -> bool:
 
 def usable(item: dict) -> bool:
     data = (item.get("data") or [{}])[0]
-    text = (data.get("description", "") + " " + data.get("title", "")).lower()
+    text = " ".join(str(value) for value in data.values()).lower()
     return bool(data.get("nasa_id")) and not any(
         marker in text for marker in ("copyright", "©", "all rights reserved", "press conference")
     )
@@ -91,6 +91,18 @@ class NasaVideoProvider:
                 if not urls:
                     continue
                 try:
+                    manifest = await request(
+                        self.client,
+                        "GET",
+                        "https://images-api.nasa.gov/asset/" + quote(identifier, safe=""),
+                    )
+                    larger = [
+                        entry["href"]
+                        for entry in manifest.json()["collection"]["items"]
+                        if nasa_url(entry.get("href", "")) and entry["href"].endswith("~medium.jpg")
+                    ]
+                    if larger:
+                        urls = larger
                     path = destination.with_suffix(Path(urlparse(urls[0]).path).suffix)
                     await download(self.client, urls[0], path)
                 except (httpx.HTTPError, ValueError):

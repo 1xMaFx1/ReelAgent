@@ -40,6 +40,17 @@ class Script(Model):
         return " ".join(self.segments)
 
 
+class GeneratedScript(Script):
+    @model_validator(mode="after")
+    def narration_length(self):
+        words = len(self.text.split())
+        if not 65 <= words <= 100:
+            raise ValueError(
+                f"Narration has {words} words; write 65–100 Russian words across hook, scenes and ending"
+            )
+        return self
+
+
 class Metadata(Model):
     title: str = Field(min_length=3, max_length=100)
     description: str = Field(min_length=10, max_length=3000)

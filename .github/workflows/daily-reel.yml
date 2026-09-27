@@ -15,6 +15,10 @@ on:
         description: 'Identifier from the one-click launcher'
         type: string
         required: false
+      repair_draft:
+        description: 'Explicitly replace today unpublished draft after editorial review'
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -81,6 +85,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/cloud_state.py
+      - name: Replace unpublished draft only on explicit manual request
+        if: github.event_name == 'workflow_dispatch' && inputs.repair_draft
+        run: python -m scripts.repair_draft
       - name: Generate daily reel
         env:
           REEL_COMMAND: generate
@@ -104,7 +111,7 @@ jobs:
         with:
           name: reel-${{ github.run_id }}-${{ github.run_attempt }}
           path: output/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Logs
         if: always()

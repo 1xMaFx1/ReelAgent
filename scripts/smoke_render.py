@@ -60,9 +60,13 @@ async def main() -> None:
         captions = SubtitleGenerator(s).generate(
             ["Проверка облачного монтажа и русских субтитров."], 11, work / "subtitles.ass"
         )
+        photo = work / "photo.jpg"
+        await command(
+            ["ffmpeg", "-v", "error", "-y", "-i", str(source), "-frames:v", "1", str(photo)]
+        )
         await VideoComposer(s).compose(
-            [Media(source, "synthetic", "", "")],
-            [11],
+            [Media(source, "synthetic", "", ""), Media(photo, "still", "", "", True)],
+            [5, 6],
             audio,
             captions,
             work / "reel.mp4",

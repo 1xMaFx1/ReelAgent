@@ -138,6 +138,15 @@ class Pipeline:
             )
             if episode:
                 self._episode_titles(captions, duration)
+            elif nasa:
+                from app.subtitles.generator import timestamp
+
+                with captions.open("a", encoding="utf-8") as handle:
+                    handle.write(
+                        f"Dialogue: 1,0:00:00.00,{timestamp(duration)},Default,,0,0,0,,"
+                        + r"{\an7\pos(70,90)\fs26\bord1\c&HDDDDDD&}ИЗОБРАЖЕНИЯ: NASA"
+                        + "\n"
+                    )
             provider = (
                 EpisodeVideoProvider(episode, client)
                 if episode
@@ -167,6 +176,7 @@ class Pipeline:
                 else [story["url"]]
                 if story
                 else [],
+                "fact_source_excerpt": story["description"] if story else None,
                 "youtube": None,
                 "instagram": None,
                 "publication_attempts": {},

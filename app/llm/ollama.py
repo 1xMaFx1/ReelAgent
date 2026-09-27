@@ -30,9 +30,9 @@ class OllamaProvider(GeminiProvider):
                         "prompt": instruction,
                         "format": model.model_json_schema(),
                         "stream": False,
-                        "think": False,
+                        "think": model.__name__ == "GeneratedScript",
                         "keep_alive": "30m",
-                        "options": {"num_ctx": 8192, "num_predict": 2200, "temperature": 0.6},
+                        "options": {"num_ctx": 8192, "num_predict": 5000, "temperature": 0.3},
                     },
                 )
                 response.raise_for_status()
