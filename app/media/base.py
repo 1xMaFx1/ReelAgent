@@ -10,6 +10,8 @@ class Media:
     source_url: str
     author: str
     is_image: bool = False
+    zoom_out: bool = False
+    mask_captions: bool = False
 
 
 class VideoProvider(Protocol):

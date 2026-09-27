@@ -38,6 +38,7 @@ def test_no_stale_run(tmp_path, monkeypatch):
     monkeypatch.setattr(
         receiver, "download", lambda *args: (_ for _ in ()).throw(AssertionError("stale download"))
     )
+    monkeypatch.setattr(receiver, "update_dashboard", lambda *args: None)
     receiver.main()
 
 
@@ -81,4 +82,5 @@ def test_idle_after_delivery(tmp_path, monkeypatch):
         "download",
         lambda *args: (_ for _ in ()).throw(AssertionError("duplicate download")),
     )
+    monkeypatch.setattr(receiver, "update_dashboard", lambda *args: None)
     receiver.main()

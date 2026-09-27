@@ -1,0 +1,434 @@
+{
+  "id": "claude-space-2026-09-27",
+  "start_date": "2026-09-27",
+  "entries": [
+    {
+      "day": 1,
+      "mode": "anchor",
+      "topic": "16 рассветов за сутки",
+      "prompt": "Day 1 — What Earth looks like from space in 24 hours. Keep the existing anchor post. Original caption: 10 sunrises in one day. Editorial correction: about 16 sunrises per day on the ISS.",
+      "facts": "На МКС примерно 16 рассветов за сутки, а не 10.",
+      "sources": [
+        "https://science.nasa.gov/earth/earth-observatory/sunset-from-the-international-space-station-44267/"
+      ],
+      "anchor_run_id": 36254555289,
+      "anchor_date": "2026-09-26"
+    },
+    {
+      "day": 2,
+      "topic": "Пять неожиданных фактов о космосе",
+      "prompt": "Day 2 — 5 facts about space that sound fake but are true. Fast cuts, bold text on screen, one fact per approximately 3 seconds. Caption idea: Which one shocked you most?",
+      "script": {
+        "topic": "Пять неожиданных фактов о космосе",
+        "hook": "Пять фактов, которые звучат как выдумка.",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Солнечный свет летит до Земли около восьми минут.",
+            "visual_query": "Sun Earth",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "Венера вращается вокруг оси дольше, чем длится её год.",
+            "visual_query": "Venus planet",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "Обратная сторона Луны тоже получает солнечный свет.",
+            "visual_query": "Moon far side",
+            "duration": 6
+          },
+          {
+            "id": 4,
+            "narration": "Средняя плотность Сатурна меньше плотности воды.",
+            "visual_query": "Saturn Cassini",
+            "duration": 6
+          },
+          {
+            "id": 5,
+            "narration": "На МКС видят примерно шестнадцать рассветов за сутки.",
+            "visual_query": "Earth ISS sunrise",
+            "duration": 6
+          }
+        ],
+        "ending": "Какой факт удивил тебя больше?"
+      },
+      "copy": {
+        "title": "Звучит как фейк. Но это космос",
+        "keywords": [
+          "космос",
+          "Венера",
+          "Луна",
+          "Сатурн",
+          "МКС"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "СВЕТ ЛЕТИТ 8 МИНУТ",
+        "ОБОРОТ ДОЛЬШЕ ГОДА",
+        "ОБРАТНАЯ ≠ ТЁМНАЯ",
+        "ПЛОТНОСТЬ НИЖЕ ВОДЫ",
+        "16 РАССВЕТОВ"
+      ],
+      "sources": [
+        "https://science.nasa.gov/sun/facts/",
+        "https://science.nasa.gov/venus/venus-facts/",
+        "https://science.nasa.gov/moon/facts/",
+        "https://science.nasa.gov/saturn/facts/",
+        "https://science.nasa.gov/earth/earth-observatory/sunset-from-the-international-space-station-44267/"
+      ],
+      "min_seconds": 20,
+      "max_seconds": 35
+    },
+    {
+      "day": 3,
+      "topic": "Почему небо не фиолетовое",
+      "prompt": "Day 3 — Why the sky is actually purple, not blue (fun optical fact). Original caption: You have been lied to your whole life. Editorial correction: do not claim the sky is secretly purple; explain why it appears blue.",
+      "script": {
+        "topic": "Почему небо не фиолетовое",
+        "hook": "Почему небо голубое, а не фиолетовое?",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Солнечный свет кажется белым, но в нём смешаны разные цвета. Попадая в атмосферу, он рассеивается на молекулах воздуха.",
+            "visual_query": "Earth atmosphere",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "Короткие волны рассеиваются сильнее длинных. Поэтому синего света приходит к нам со всего неба гораздо больше, чем красного.",
+            "visual_query": "Earth blue limb",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "Фиолетовый рассеивается ещё сильнее. Но цвет зависит не только от рассеяния: важны состав солнечного света и чувствительность наших глаз.",
+            "visual_query": "Earth horizon",
+            "duration": 6
+          },
+          {
+            "id": 4,
+            "narration": "К фиолетовому наши глаза менее чувствительны. Вместе эти факторы дают привычное голубое небо, а не спрятанный фиолетовый цвет.",
+            "visual_query": "Earth atmosphere blue",
+            "duration": 6
+          }
+        ],
+        "ending": "Физика цвета интереснее громкого мифа."
+      },
+      "copy": {
+        "title": "Почему небо не фиолетовое?",
+        "keywords": [
+          "небо",
+          "рассеяние света",
+          "атмосфера",
+          "зрение"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "СВЕТ — СМЕСЬ ЦВЕТОВ",
+        "КОРОТКИЕ ВОЛНЫ",
+        "ДЕЛО НЕ ТОЛЬКО В СВЕТЕ",
+        "ГЛАЗА ТОЖЕ ВАЖНЫ"
+      ],
+      "sources": [
+        "https://spaceplace.nasa.gov/blue-sky/en/",
+        "https://ntrs.nasa.gov/api/citations/19950008097/downloads/19950008097.pdf"
+      ],
+      "min_seconds": 30,
+      "max_seconds": 50
+    },
+    {
+      "day": 4,
+      "topic": "Температура в центре Солнца",
+      "prompt": "Day 4 — Did you know: striking close-up visual of a natural phenomenon, with one surprising stat overlaid. Caption idea: Save this for your next trivia night.",
+      "script": {
+        "topic": "Температура в центре Солнца",
+        "hook": "Пятнадцать миллионов градусов. Где бывает такая жара?",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Примерно такая температура, по оценкам учёных, в центре Солнца. Это гораздо горячее его видимой поверхности.",
+            "visual_query": "Sun SDO",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "В солнечном ядре идёт термоядерный синтез: водород превращается в гелий, и при этом выделяется энергия.",
+            "visual_query": "Sun solar dynamics",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "На этих снимках показаны внешние слои Солнца. Мы не заглядываем камерой прямо в ядро: о нём узнают по физическим моделям и наблюдениям.",
+            "visual_query": "Sun corona",
+            "duration": 6
+          },
+          {
+            "id": 4,
+            "narration": "Именно внутренняя энергия нашей звезды в итоге позволяет ей светить и согревать Землю.",
+            "visual_query": "Sun full disk",
+            "duration": 6
+          }
+        ],
+        "ending": "Одна звезда — и целый мир света."
+      },
+      "copy": {
+        "title": "15 миллионов градусов внутри",
+        "keywords": [
+          "Солнце",
+          "солнечное ядро",
+          "температура",
+          "термоядерный синтез"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "ЯДРО: ≈15 МЛН °C",
+        "ТЕРМОЯДЕРНЫЙ СИНТЕЗ",
+        "НА ЭКРАНЕ ВНЕШНИЕ СЛОИ",
+        "ЭНЕРГИЯ НАШЕЙ ЗВЕЗДЫ"
+      ],
+      "sources": [
+        "https://science.nasa.gov/sun/facts/"
+      ],
+      "min_seconds": 30,
+      "max_seconds": 50
+    },
+    {
+      "day": 5,
+      "topic": "Масштабы Земли и Вселенной",
+      "prompt": "Day 5 — How small Earth really is compared to the universe. Zoom-out visual. Caption idea: This one made me feel very small. Use an illustrative montage, not a claim of one continuous accurately scaled camera flight.",
+      "script": {
+        "topic": "Масштабы Земли и Вселенной",
+        "hook": "Насколько мала Земля? Давай отдалимся.",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Для нас Земля огромна. Но рядом с Солнцем её размер кажется совсем скромным: диаметр звезды примерно в сто девять раз больше.",
+            "visual_query": "Earth blue marble",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "Даже свету нужно около восьми минут, чтобы преодолеть расстояние от Солнца до нашей планеты.",
+            "visual_query": "Sun full disk",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "Теперь мысленно отдалимся за пределы Солнечной системы. Наше Солнце — всего одна из звёзд Млечного Пути.",
+            "visual_query": "Milky Way stars",
+            "duration": 6
+          },
+          {
+            "id": 4,
+            "narration": "Его диск простирается примерно на сто тысяч световых лет. А за ним находятся другие галактики.",
+            "visual_query": "Andromeda galaxy",
+            "duration": 6
+          },
+          {
+            "id": 5,
+            "narration": "Этот монтаж лишь помогает представить масштабы. Расстояния между кадрами здесь не показаны в едином масштабе.",
+            "visual_query": "Hubble deep field",
+            "duration": 6
+          }
+        ],
+        "ending": "Наш большой мир — крошечная часть космоса."
+      },
+      "copy": {
+        "title": "Земля меньше, чем кажется",
+        "keywords": [
+          "Земля",
+          "Солнце",
+          "Млечный Путь",
+          "галактики",
+          "масштабы космоса"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "ЗЕМЛЯ",
+        "СОЛНЦЕ",
+        "МЛЕЧНЫЙ ПУТЬ",
+        "≈100 000 СВЕТОВЫХ ЛЕТ",
+        "СХЕМАТИЧНЫЙ МОНТАЖ"
+      ],
+      "sources": [
+        "https://science.nasa.gov/sun/facts/",
+        "https://science.nasa.gov/universe/exoplanets/our-milky-way-galaxy-how-big-is-space/",
+        "https://science.nasa.gov/earth/facts/"
+      ],
+      "zoom_out": true,
+      "min_seconds": 30,
+      "max_seconds": 55
+    },
+    {
+      "day": 6,
+      "topic": "Три мифа о космосе",
+      "prompt": "Day 6 — 3 space myths you probably believe. Caption idea: Number 2 gets everyone. Explain the corrections without sensational false statements.",
+      "script": {
+        "topic": "Три мифа о космосе",
+        "hook": "Три космических мифа, в которые легко поверить.",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Первый: на орбите нет гравитации. Есть! Станция и космонавты вместе постоянно падают вокруг Земли. Поэтому внутри возникает невесомость, хотя земное притяжение никуда не исчезло.",
+            "visual_query": "International Space Station orbit",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "Второй: обратная сторона Луны всегда тёмная. Нет: она тоже освещается Солнцем. Обратной её называют потому, что с Земли мы видим преимущественно другую сторону.",
+            "visual_query": "Moon far side",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "Третий: Солнце горит как костёр. Его энергия рождается в результате термоядерного синтеза в ядре, а не обычного горения с кислородом.",
+            "visual_query": "Sun SDO",
+            "duration": 6
+          }
+        ],
+        "ending": "Какой из этих мифов слышал ты?"
+      },
+      "copy": {
+        "title": "В космосе всё не так?",
+        "keywords": [
+          "космос",
+          "мифы",
+          "гравитация",
+          "Луна",
+          "Солнце"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "ГРАВИТАЦИЯ ЕСТЬ",
+        "ОБРАТНАЯ ≠ ВСЕГДА ТЁМНАЯ",
+        "СИНТЕЗ, А НЕ КОСТЁР"
+      ],
+      "sources": [
+        "https://www.nasa.gov/learning-resources/for-kids-and-students/what-is-microgravity-grades-5-8/",
+        "https://science.nasa.gov/moon/facts/",
+        "https://science.nasa.gov/sun/facts/"
+      ],
+      "min_seconds": 30,
+      "max_seconds": 50
+    },
+    {
+      "day": 7,
+      "topic": "Лучшие факты космической недели",
+      "prompt": "Day 7 — Which fact from this week surprised you most? Quick highlight reel of days 1–6. Use actual previous episode footage. Caption idea: New facts every day — which was your favorite? Comment below.",
+      "script": {
+        "topic": "Лучшие факты космической недели",
+        "hook": "Шесть выпусков — и космос уже выглядит иначе.",
+        "scenes": [
+          {
+            "id": 1,
+            "narration": "Помнишь шестнадцать рассветов за сутки? Именно столько примерно видят с Международной космической станции.",
+            "visual_query": "recap day 1",
+            "duration": 6
+          },
+          {
+            "id": 2,
+            "narration": "А Венера? Один оборот вокруг её оси длится дольше местного года.",
+            "visual_query": "recap day 2",
+            "duration": 6
+          },
+          {
+            "id": 3,
+            "narration": "Голубой цвет неба зависит и от рассеяния света, и от того, как устроено наше зрение.",
+            "visual_query": "recap day 3",
+            "duration": 6
+          },
+          {
+            "id": 4,
+            "narration": "В центре Солнца — примерно пятнадцать миллионов градусов.",
+            "visual_query": "recap day 4",
+            "duration": 6
+          },
+          {
+            "id": 5,
+            "narration": "Земля кажется крошечной, если сравнивать её со звёздами и галактиками.",
+            "visual_query": "recap day 5",
+            "duration": 6
+          },
+          {
+            "id": 6,
+            "narration": "И невесомость на орбите вовсе не означает, что там исчезла гравитация.",
+            "visual_query": "recap day 6",
+            "duration": 6
+          }
+        ],
+        "ending": "Какой факт удивил тебя больше всего? Напиши в комментариях."
+      },
+      "copy": {
+        "title": "Какой факт тебя поразил?",
+        "keywords": [
+          "космос",
+          "факты недели",
+          "МКС",
+          "Венера",
+          "Солнце",
+          "гравитация"
+        ],
+        "hashtags": [
+          "#космос",
+          "#наука",
+          "#факты"
+        ]
+      },
+      "overlays": [
+        "16 РАССВЕТОВ",
+        "УДИВИТЕЛЬНАЯ ВЕНЕРА",
+        "ПОЧЕМУ НЕБО ГОЛУБОЕ",
+        "15 МИЛЛИОНОВ ГРАДУСОВ",
+        "МАСШТАБЫ КОСМОСА",
+        "ГРАВИТАЦИЯ НИКУДА НЕ ДЕЛАСЬ"
+      ],
+      "sources": [
+        "https://science.nasa.gov/earth/earth-observatory/sunset-from-the-international-space-station-44267/",
+        "https://science.nasa.gov/venus/venus-facts/",
+        "https://spaceplace.nasa.gov/blue-sky/en/",
+        "https://science.nasa.gov/sun/facts/",
+        "https://science.nasa.gov/universe/exoplanets/our-milky-way-galaxy-how-big-is-space/",
+        "https://www.nasa.gov/learning-resources/for-kids-and-students/what-is-microgravity-grades-5-8/"
+      ],
+      "mode": "recap",
+      "recap_days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "min_seconds": 30,
+      "max_seconds": 55
+    }
+  ]
+}

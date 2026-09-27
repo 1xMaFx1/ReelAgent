@@ -22,7 +22,7 @@ class Scene(Model):
 class Script(Model):
     topic: str = Field(min_length=5, max_length=200)
     hook: str = Field(min_length=3, max_length=100)
-    scenes: list[Scene] = Field(min_length=4, max_length=7)
+    scenes: list[Scene] = Field(min_length=1, max_length=7)
     ending: str = Field(min_length=3, max_length=180)
 
     @model_validator(mode="after")

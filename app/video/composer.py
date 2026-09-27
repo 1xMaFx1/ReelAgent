@@ -33,13 +33,21 @@ class VideoComposer:
                 f"scale={s.video_width}:{s.video_height}:force_original_aspect_ratio=increase,"
                 f"crop={s.video_width}:{s.video_height},setsar=1,fps={s.video_fps},format=yuv420p"
             )
+            zoom = (
+                "if(eq(on,0),1.15,max(1,zoom-0.0005))" if item.zoom_out else "min(zoom+0.0003,1.08)"
+            )
             if item.is_image:
                 filters = (
                     f"scale={s.video_width}:{s.video_height}:force_original_aspect_ratio=increase,"
                     f"crop={s.video_width}:{s.video_height},"
-                    f"zoompan=z='min(zoom+0.0003,1.08)':x='iw/2-iw/zoom/2':"
+                    f"zoompan=z='{zoom}':x='iw/2-iw/zoom/2':"
                     f"y='ih/2-ih/zoom/2':d=1:s={s.video_width}x{s.video_height}:fps={s.video_fps},"
                     "setsar=1,format=yuv420p"
+                )
+            if item.mask_captions:
+                filters += (
+                    ",drawbox=x=0:y=ih*0.65:w=iw:h=ih*0.35:color=black:t=fill"
+                    ",drawbox=x=0:y=0:w=iw:h=ih*0.25:color=black:t=fill"
                 )
             await command(
                 [

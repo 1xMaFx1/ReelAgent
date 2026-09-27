@@ -2,25 +2,30 @@ name: Daily Reel
 run-name: ReelAgent ${{ inputs.request_id || github.run_id }}
 on:
   schedule:
-    # Generate at 04:17 UTC+3, retry at 06:17; daily state prevents duplicates.
-    - cron: '17 1,3 * * *'
+    # Render 43 minutes before publication (UTC+3). Verify seven minutes afterwards.
+    - cron: '17 4 * * *'
+    - cron: '17 8 * * *'
+    - cron: '17 13 * * *'
+    - cron: '7 5 * * *'
+    - cron: '7 9 * * *'
+    - cron: '7 14 * * *'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Generate only: publishing is disabled'
+        description: 'generate = preview only; run = create and schedule; verify = check Buffer'
         type: choice
-        options: [generate, run]
+        options: [generate, run, verify]
         default: generate
-      request_id:
-        description: 'Identifier from the one-click launcher'
+      slot:
+        description: 'Optional UTC+3 slot, e.g. 2026-09-28-08'
         type: string
         required: false
-      repair_draft:
-        description: 'Explicitly replace today unpublished draft after editorial review'
-        type: boolean
-        default: false
+      request_id:
+        description: 'Identifier from launcher'
+        type: string
+        required: false
 permissions:
-  contents: read
+  contents: write
   actions: read
 concurrency:
   group: reelagent-daily
@@ -29,72 +34,74 @@ jobs:
   reel:
     if: github.event_name != 'schedule' || vars.DAILY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
     env:
       APP_ENV: cloud
-      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'ollama' }}
+      CONTENT_MODE: prompt_queue
+      PROMPT_QUEUE_FILE: prompts/current-week.json
+      GH_TOKEN: ${{ github.token }}
       MEDIA_PROVIDER: nasa
-      OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}
-      CONTENT_BRIEF_FILE: ${{ vars.CONTENT_BRIEF_FILE || '' }}
-      EPISODE_FILE: ''
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
-      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      TTS_VOICE: ${{ vars.TTS_VOICE || 'ru-RU-DmitryNeural' }}
+      TTS_VOICE: ru-RU-DmitryNeural
       DRY_RUN: 'true'
       AUTO_PUBLISH_YOUTUBE: 'false'
-      AUTO_PUBLISH_INSTAGRAM: 'false'
-      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-      YOUTUBE_PRIVACY_STATUS: ${{ vars.YOUTUBE_PRIVACY_STATUS || 'public' }}
-      YOUTUBE_PUBLISHER: ${{ vars.YOUTUBE_PUBLISHER || 'buffer' }}
-      YOUTUBE_CHANNEL_ID: ${{ vars.YOUTUBE_CHANNEL_ID || 'UCr74LNUyePqX4CLS9sI5IPg' }}
+      AUTO_PUBLISH_INSTAGRAM: ${{ (github.event_name == 'schedule' || inputs.mode == 'run' || inputs.mode == 'verify') && vars.AUTO_PUBLISH_INSTAGRAM == 'true' }}
       BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
       BUFFER_CHANNEL_ID: ${{ vars.BUFFER_CHANNEL_ID }}
-      PUBLICATION_TIMEZONE: Europe/Simferopol
-      PUBLICATION_HOUR: '8'
-      PUBLICATION_MINUTE: '0'
-      INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-      INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
-      INSTAGRAM_API_VERSION: ${{ vars.INSTAGRAM_API_VERSION || 'v24.0' }}
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      INSTAGRAM_USERNAME: mateushstameska
+      VERIFY_ONLY: ${{ startsWith(github.event.schedule, '7 ') || inputs.mode == 'verify' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
-      - name: Install FFmpeg and fonts
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
       - name: Install Python dependencies
         run: pip install -r requirements.txt
-      - name: Restore durable daily state
+      - name: Choose publication slot
+        env:
+          REQUESTED_SLOT: ${{ inputs.slot }}
+          SCHEDULE_EVENT: ${{ github.event.schedule }}
+        run: python -m scripts.choose_slot
+      - name: Restore state and current slot
         id: state
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python scripts/cloud_state.py
-      - name: Start free open model on cloud CPU
-        if: env.LLM_PROVIDER == 'ollama' && (steps.state.outputs.ready != 'true' || inputs.repair_draft)
-        run: |
-          docker run -d --name reelagent-ollama -p 127.0.0.1:11434:11434 ollama/ollama:latest
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:11434/api/version; then break; fi
-            sleep 2
-          done
-          docker exec reelagent-ollama ollama pull "$OLLAMA_MODEL"
-      - name: Replace unpublished draft only on explicit manual request
-        if: github.event_name == 'workflow_dispatch' && inputs.repair_draft
-        run: python -m scripts.repair_draft
-      - name: Generate daily reel
-        env:
-          REEL_COMMAND: generate
-        run: python -m app.main "$REEL_COMMAND"
-      - name: Create downloadable preview
+        run: python -m scripts.cloud_state
+      - name: Validate weekly Claude packet
+        if: env.VERIFY_ONLY != 'true'
+        run: python -m scripts.check_plan
+      - name: Install FFmpeg and fonts
+        if: env.VERIFY_ONLY != 'true'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Create video from prepared script
+        if: env.VERIFY_ONLY != 'true'
+        run: python -m app.main generate
+      - name: Create preview
+        if: env.VERIFY_ONLY != 'true'
         run: python -m scripts.preview
-      - name: Save history and current video even if publication failed
+      - name: Save public video in approved GitHub Releases
+        if: env.VERIFY_ONLY != 'true'
+        run: python -m scripts.release_video
+      - name: Prepare Instagram scheduling and durable intent
+        if: env.VERIFY_ONLY != 'true'
+        id: publication
+        run: python -m scripts.schedule_instagram prepare
+      - name: Checkpoint before remote post creation
+        if: steps.publication.outputs.create == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reelagent-state
+          overwrite: true
+          path: |
+            data/reelagent.db
+            data/week-cache/
+            output/
+          retention-days: 1
+      - name: Send ready video to Instagram schedule
+        if: steps.publication.outputs.create == 'true'
+        run: python -m scripts.schedule_instagram submit
+      - name: Verify actual Instagram publication
+        if: env.VERIFY_ONLY == 'true'
+        run: python -m scripts.schedule_instagram verify
+      - name: Save durable state even after a publishing error
         if: always() && steps.state.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
@@ -102,8 +109,9 @@ jobs:
           overwrite: true
           path: |
             data/reelagent.db
+            data/week-cache/
             output/
-          retention-days: 7
+          retention-days: 1
           if-no-files-found: warn
       - name: Downloadable MP4 and metadata
         if: always()

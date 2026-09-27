@@ -15,3 +15,4 @@ data/*.lock
 .DS_Store
 .local/
 Готовые ролики/
+data/week-cache/

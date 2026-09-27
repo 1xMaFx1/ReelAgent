@@ -3,11 +3,12 @@
 import fcntl
 import json
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from scripts.launch import ROOT, download, gh, repository
+from scripts.status_dashboard import update as update_dashboard
 
 
 def write_status(message: str) -> None:
@@ -80,8 +81,6 @@ def main() -> None:
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return
-        today = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
-        destination = ROOT / "Готовые ролики" / today / "reel.mp4"
         repo = repository()
         runs = json.loads(
             gh(
@@ -94,42 +93,51 @@ def main() -> None:
                 "--limit",
                 "20",
                 "--json",
-                "databaseId,conclusion,createdAt",
+                "databaseId,status,conclusion,createdAt",
             )
         )
+        update_dashboard(repo, runs, ROOT)
+        seen = set()
+        known_ids = {
+            p.read_text().strip(): p.parent.name
+            for p in (ROOT / "Готовые ролики").glob("*/.cloud-run-id")
+        }
+        delivered = []
         for run in runs:
-            day = (
-                datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
-                .astimezone(ZoneInfo("Europe/Simferopol"))
-                .date()
-                .isoformat()
-            )
-            if run["conclusion"] != "success" or day != today:
+            # Download successful or failed jobs: a publication error must not hide a ready MP4.
+            if not run.get("conclusion"):
                 continue
-            marker = destination.with_name(".cloud-run-id")
-            if (
-                destination.exists()
-                and marker.exists()
-                and marker.read_text() == str(run["databaseId"])
-            ):
-                write_status("Ролик за " + today + " готов: " + str(destination))
-                return
-            video = download(repo, run["databaseId"])
-            if video.parent.name != today:
+            created = datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
+            if created < datetime.now(ZoneInfo("Europe/Simferopol")) - timedelta(days=2):
                 continue
+            if str(run["databaseId"]) in known_ids:
+                seen.add(known_ids[str(run["databaseId"])])
+                continue
+            marker = local / ("downloaded-run-" + str(run["databaseId"]))
+            if marker.exists():
+                seen.add(marker.read_text())
+                continue
+            try:
+                video = download(repo, run["databaseId"])
+            except RuntimeError:
+                continue
+            slot = video.parent.name
+            if slot in seen:
+                marker.write_text("superseded")
+                continue
+            seen.add(slot)
             result = deliver(video, run["databaseId"])
-            write_status("Ролик за " + today + " готов: " + str(result))
-            shutil.rmtree(local / "downloads" / str(run["databaseId"]), ignore_errors=True)
-            print(f"{datetime.now().isoformat()}: Сохранено {result}", flush=True)
-            return
-        request_backup(repo, runs, datetime.now(ZoneInfo("Europe/Simferopol")), local)
-        write_status(
-            "Ожидается ролик за "
-            + today
-            + ". Скачивание повторяется каждые пять минут.\nХод создания и ошибки: https://github.com/"
-            + repo
-            + "/actions/workflows/daily-reel.yml"
-        )
+            marker.write_text(slot)
+            delivered.append(str(result))
+        update_dashboard(repo, runs, ROOT)
+        if delivered:
+            write_status("Сохранены новые выпуски:\n" + "\n".join(delivered))
+        else:
+            write_status(
+                "Получатель работает. Проверка каждые пять минут.\n"
+                "Подробности: откройте «Статус агента.command».\n"
+                "https://github.com/" + repo + "/actions/workflows/daily-reel.yml"
+            )
 
 
 if __name__ == "__main__":

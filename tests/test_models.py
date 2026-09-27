@@ -19,7 +19,7 @@ def test_reject_nonsequential_ids(script):
 
 def test_reject_short_body(script):
     value = script.model_dump()
-    value["scenes"] = value["scenes"][:3]
+    value["scenes"] = value["scenes"][:0]
     with pytest.raises(ValidationError):
         Script.model_validate(value)
 

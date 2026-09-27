@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     llm_provider: Literal["gemini", "ollama"] = "gemini"
     ollama_model: str = "qwen2.5:7b"
     content_brief_file: Path | None = None
+    run_slot: str = ""
+    content_mode: Literal["autonomous", "prompt_queue"] = "autonomous"
+    prompt_queue_file: Path = Path("prompts/current-week.json")
     pexels_api_key: SecretStr = SecretStr("")
     media_provider: Literal["pexels", "nasa"] = "pexels"
     tts_voice: str = "ru-RU-DmitryNeural"
@@ -40,6 +43,7 @@ class Settings(BaseSettings):
     publication_minute: int = Field(default=0, ge=0, le=59)
     instagram_access_token: SecretStr = SecretStr("")
     instagram_account_id: str = ""
+    instagram_username: str = "mateushstameska"
     instagram_api_version: str = "v24.0"
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: SecretStr = SecretStr("")

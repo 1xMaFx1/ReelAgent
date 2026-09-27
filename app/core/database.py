@@ -22,6 +22,10 @@ class Database:
             created_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS sources (source_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS prompt_assignments (
+            day TEXT PRIMARY KEY, prompt_key TEXT NOT NULL UNIQUE,
+            plan_id TEXT NOT NULL, entry_json TEXT NOT NULL
+        );
         """)
         self.connection.commit()
 
@@ -30,6 +34,25 @@ class Database:
 
     def source_ids(self) -> set[str]:
         return {row[0] for row in self.connection.execute("SELECT source_id FROM sources")}
+
+    def assigned_prompt(self, day: str) -> dict | None:
+        row = self.connection.execute(
+            "SELECT * FROM prompt_assignments WHERE day=?", (day,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def assign_prompt(self, day: str, key: str, plan_id: str, entry_json: str) -> None:
+        previous = self.assigned_prompt(day)
+        if previous:
+            if previous["prompt_key"] != key or previous["plan_id"] != plan_id:
+                raise ValueError(
+                    "Сегодняшний промпт уже закреплён. Нельзя незаметно заменить его при повторе."
+                )
+            return
+        with self.connection:
+            self.connection.execute(
+                "INSERT INTO prompt_assignments VALUES(?,?,?,?)", (day, key, plan_id, entry_json)
+            )
 
     def add_source(self, source_id: str) -> None:
         with self.connection:

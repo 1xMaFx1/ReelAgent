@@ -50,8 +50,8 @@ def safari(url: str) -> None:
 
 
 def setup(repo: str) -> None:
-    print("Для создания роликов ключи не нужны: облачная модель Ollama и библиотека NASA.")
-    print("GitHub подключён. Автопубликация выключена.")
+    print("Для создания роликов ключи не нужны: готовые сценарии, NASA и облачный монтаж.")
+    print("Подключение Instagram: Buffer Free; ключ хранится только в GitHub Secrets.")
 
 
 def find_run(repo: str, request_id: str) -> dict:
@@ -130,7 +130,7 @@ def download_to(repo: str, run_id: int, destination: Path) -> Path:
     if len(candidates) != 1:
         raise RuntimeError("Готовый MP4 не найден. Откройте журнал запуска в Actions.")
     source = candidates[0]
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", source.parent.name):
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:-(?:08|12|17))?", source.parent.name):
         raise RuntimeError("Неожиданная структура архива ролика")
     target = ROOT / "output" / source.parent.name
     target.mkdir(parents=True, exist_ok=True)

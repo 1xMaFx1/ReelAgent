@@ -41,6 +41,10 @@ class Pipeline:
             db = Database(s.path("data/reelagent.db"))
             try:
                 async with httpx.AsyncClient(timeout=90) as client:
+                    if s.content_mode == "prompt_queue":
+                        from app.core.weekly_pipeline import run_weekly
+
+                        return await run_weekly(s, db, client)
                     return await self._run(db, client, publish)
             finally:
                 db.close()
