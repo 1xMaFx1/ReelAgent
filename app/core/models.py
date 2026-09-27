@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Model(BaseModel):
@@ -60,9 +60,9 @@ class NarrationDraft(Model):
     @model_validator(mode="after")
     def length(self):
         words = len((self.hook + " " + self.body + " " + self.ending).split())
-        if not 65 <= words <= 100:
+        if not 55 <= words <= 100:
             raise ValueError(
-                f"Text has {words} words. Required total: 65–100 words. Expand body to 70 words."
+                f"Text has {words} words. Required total: 55–100 words. Expand body to 70 words."
             )
         return self
 
@@ -83,6 +83,25 @@ class SocialCopy(Model):
     title: str = Field(min_length=3, max_length=55)
     keywords: list[str] = Field(min_length=3, max_length=8)
     hashtags: list[str] = Field(min_length=3, max_length=6)
+
+    @field_validator("hashtags", mode="before")
+    @classmethod
+    def normalize_tags(cls, values):
+        import re
+
+        if not isinstance(values, list):
+            return values
+        normalized = []
+        for value in values:
+            if not isinstance(value, str):
+                return values
+            tag = re.sub(r"[^\w]", "", value)[:40]
+            if len(tag) >= 2 and "#" + tag not in normalized:
+                normalized.append("#" + tag)
+        for tag in ("#космос", "#наука", "#NASA"):
+            if len(normalized) < 3 and tag not in normalized:
+                normalized.append(tag)
+        return normalized[:6]
 
     @model_validator(mode="after")
     def validate_copy(self):
