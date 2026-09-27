@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'generate never publishes; run respects repository variables'
+        description: 'Generate only: publishing is disabled'
         type: choice
         options: [generate, run]
         default: generate
@@ -71,8 +71,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
       - name: Install Python dependencies
         run: pip install -r requirements.txt
+      - name: Restore durable daily state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/cloud_state.py
       - name: Start free open model on cloud CPU
-        if: env.LLM_PROVIDER == 'ollama' && env.EPISODE_FILE == ''
+        if: env.LLM_PROVIDER == 'ollama' && (steps.state.outputs.ready != 'true' || inputs.repair_draft)
         run: |
           docker run -d --name reelagent-ollama -p 127.0.0.1:11434:11434 ollama/ollama:latest
           for attempt in $(seq 1 30); do
@@ -80,11 +85,6 @@ jobs:
             sleep 2
           done
           docker exec reelagent-ollama ollama pull "$OLLAMA_MODEL"
-      - name: Restore durable daily state
-        id: state
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python scripts/cloud_state.py
       - name: Replace unpublished draft only on explicit manual request
         if: github.event_name == 'workflow_dispatch' && inputs.repair_draft
         run: python -m scripts.repair_draft
@@ -111,7 +111,7 @@ jobs:
         with:
           name: reel-${{ github.run_id }}-${{ github.run_attempt }}
           path: output/
-          retention-days: 7
+          retention-days: 1
           if-no-files-found: ignore
       - name: Logs
         if: always()

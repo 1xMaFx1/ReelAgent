@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 from scripts.launch import ROOT, download, gh, repository
 
 
-def deliver(video: Path) -> Path:
+def deliver(video: Path, run_id: int | None = None) -> Path:
     metadata = json.loads(video.with_name("metadata.json").read_text(encoding="utf-8"))
     target = ROOT / "Готовые ролики" / video.parent.name
     target.mkdir(parents=True, exist_ok=True)
@@ -24,6 +24,8 @@ def deliver(video: Path) -> Path:
     (target / "Описание.txt").write_text(
         metadata["description"] + "\n" + " ".join(metadata["hashtags"]) + "\n", encoding="utf-8"
     )
+    if run_id is not None:
+        (target / ".cloud-run-id").write_text(str(run_id))
     return target / "reel.mp4"
 
 
@@ -37,8 +39,6 @@ def main() -> None:
             return
         today = datetime.now(ZoneInfo("Europe/Simferopol")).date().isoformat()
         destination = ROOT / "Готовые ролики" / today / "reel.mp4"
-        if destination.exists():
-            return
         repo = repository()
         runs = json.loads(
             gh(
@@ -63,10 +63,17 @@ def main() -> None:
             )
             if run["conclusion"] != "success" or day != today:
                 continue
+            marker = destination.with_name(".cloud-run-id")
+            if (
+                destination.exists()
+                and marker.exists()
+                and marker.read_text() == str(run["databaseId"])
+            ):
+                return
             video = download(repo, run["databaseId"])
             if video.parent.name != today:
                 continue
-            result = deliver(video)
+            result = deliver(video, run["databaseId"])
             shutil.rmtree(local / "downloads" / str(run["databaseId"]), ignore_errors=True)
             print(f"{datetime.now().isoformat()}: Сохранено {result}", flush=True)
             return

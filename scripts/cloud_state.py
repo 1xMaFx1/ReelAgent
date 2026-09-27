@@ -68,3 +68,8 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+    if os.environ.get("GITHUB_OUTPUT"):
+        today = datetime.now(timezone.utc).date().isoformat()
+        ready = Path(f"output/{today}/reel.mp4").is_file()
+        with open(os.environ["GITHUB_OUTPUT"], "a") as handle:
+            handle.write(f"ready={str(ready).lower()}\n")

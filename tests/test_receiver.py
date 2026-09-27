@@ -46,7 +46,18 @@ def test_idle_after_delivery(tmp_path, monkeypatch):
     target = tmp_path / "Готовые ролики" / today / "reel.mp4"
     target.parent.mkdir(parents=True)
     target.write_bytes(b"ready")
+    target.with_name(".cloud-run-id").write_text("1")
+    monkeypatch.setattr(receiver, "repository", lambda: "owner/repo")
     monkeypatch.setattr(
-        receiver, "gh", lambda *args: (_ for _ in ()).throw(AssertionError("unnecessary network"))
+        receiver,
+        "gh",
+        lambda *args: json.dumps(
+            [{"databaseId": 1, "conclusion": "success", "createdAt": today + "T06:00:00Z"}]
+        ),
+    )
+    monkeypatch.setattr(
+        receiver,
+        "download",
+        lambda *args: (_ for _ in ()).throw(AssertionError("duplicate download")),
     )
     receiver.main()

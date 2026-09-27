@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -107,8 +108,13 @@ def wait_run(repo: str, run: dict) -> dict:
 
 
 def download(repo: str, run_id: int) -> Path:
-    destination = ROOT / ".local/downloads" / str(run_id)
-    destination.mkdir(parents=True, exist_ok=True)
+    parent = ROOT / ".local/downloads"
+    parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=str(run_id) + "-", dir=parent) as folder:
+        return download_to(repo, run_id, Path(folder))
+
+
+def download_to(repo: str, run_id: int, destination: Path) -> Path:
     gh(
         "run",
         "download",
@@ -176,7 +182,7 @@ def main() -> None:
         video = download(repo, run["databaseId"])
         from scripts.auto_download import deliver
 
-        video = deliver(video)
+        video = deliver(video, run["databaseId"])
         meta = json.loads(video.with_name("metadata.json").read_text())
         print("\nГотово: " + str(video))
         for name in ("youtube", "instagram"):
