@@ -13,6 +13,7 @@ from app.core.models import Status
 from app.core.prompt_queue import WeeklyPlan
 from app.core.timing import fit_timing
 from app.media.base import Media
+from app.media.commons import CommonsProvider
 from app.media.nasa import NasaVideoProvider
 from app.subtitles.generator import SubtitleGenerator, timestamp
 from app.tts.edge_tts import EdgeTTSProvider
@@ -158,7 +159,8 @@ async def run_weekly(settings, db, client):
         with subtitles.open("a", encoding="utf-8") as handle:
             handle.write(
                 f"Dialogue: 1,0:00:00.00,{timestamp(duration)},Default,,0,0,0,,"
-                + r"{\an7\pos(70,90)\fs26\bord1}ИЗОБРАЖЕНИЯ: NASA"
+                + r"{\an7\pos(70,90)\fs26\bord1}"
+                + ("ИЗОБРАЖЕНИЯ: NASA" if entry.media_source == "nasa" else "REELAGENT")
                 + "\n"
             )
             cursor = 0.0
@@ -175,7 +177,11 @@ async def run_weekly(settings, db, client):
                 )
                 cursor += length
         media, used = [], set()
-        provider = NasaVideoProvider(s, client)
+        provider = (
+            NasaVideoProvider(s, client)
+            if entry.media_source == "nasa"
+            else CommonsProvider(s, client)
+        )
         for index, scene in enumerate(script.scenes):
             if entry.mode == "recap":
                 earlier = plan.entry(entry.recap_days[index], entry.hour)

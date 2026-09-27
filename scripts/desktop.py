@@ -27,6 +27,9 @@ class Controller:
     def __init__(self, root=ROOT):
         self.root = root
         self.repo = repository(root)
+        self.download_dir = (
+            root.parent if root.name == "Рабочие файлы" else root
+        ) / "Готовые ролики"
         self.pending = None
         self.cache = None
         self.cached_at = 0
@@ -88,7 +91,7 @@ class Controller:
                     "tag": r["tag"],
                     "title": r["title"],
                     "url": r["url"],
-                    "saved": (self.root / "Готовые ролики" / r["tag"] / "reel.mp4").is_file(),
+                    "saved": (self.download_dir / r["tag"] / "reel.mp4").is_file(),
                 }
                 for r in ready
             ],
@@ -96,12 +99,17 @@ class Controller:
         self.cache, self.cached_at = result, time.monotonic()
         return result
 
-    def generate(self):
+    def generate(self, prompt=""):
+        if not isinstance(prompt, str):
+            raise ValueError("Промпт должен быть текстом")
+        prompt = prompt.strip()
+        if prompt and not 10 <= len(prompt) <= 6000:
+            raise ValueError("Введите от 10 до 6000 символов")
         with LOCK:
             state = self.snapshot(force=True)
             if state["busy"]:
                 raise ValueError("Ролик уже создаётся. Дождитесь завершения.")
-            if not state["remaining"]:
+            if not prompt and not state["remaining"]:
                 raise ValueError("Нужен новый пакет промптов")
             request = uuid.uuid4().hex
             gh(
@@ -112,6 +120,8 @@ class Controller:
                 self.repo,
                 "--field",
                 "request_id=" + request,
+                "--field",
+                "prompt=" + prompt,
                 root=self.root,
             )
             self.pending = request
@@ -125,7 +135,7 @@ class Controller:
             ready = next((r for r in ready_releases(self.repo, self.root) if r["tag"] == tag), None)
             if ready is None:
                 raise ValueError("Выпуск ещё не готов")
-            target = self.root / "Готовые ролики" / tag
+            target = self.download_dir / tag
             temp_root = self.root / ".local/downloads"
             temp_root.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(dir=temp_root) as temp:
@@ -216,6 +226,41 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(html_page(), content_type="text/html")
             if self.path == "/health":
                 return self.respond({"app": "ReelAgent", "root": str(ROOT)})
+            if self.path.startswith("/video/"):
+                tag = self.path.removeprefix("/video/")
+                if not re.fullmatch(r"reel-[a-f0-9]{16}", tag):
+                    return self.respond({"error": "Not found"}, 404)
+                path = CONTROL.download_dir / tag / "reel.mp4"
+                if not path.is_file():
+                    return self.respond({"error": "Сначала скачайте ролик"}, 404)
+                size = path.stat().st_size
+                start, end = 0, size - 1
+                partial = self.headers.get("Range")
+                if partial:
+                    match = re.fullmatch(r"bytes=(\d+)-(\d*)", partial)
+                    if not match:
+                        return self.respond({"error": "Invalid range"}, 416)
+                    start = int(match[1])
+                    end = min(int(match[2]) if match[2] else size - 1, size - 1)
+                    if start > end:
+                        return self.respond({"error": "Invalid range"}, 416)
+                self.send_response(206 if partial else 200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Length", str(end - start + 1))
+                if partial:
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+                self.end_headers()
+                with path.open("rb") as stream:
+                    stream.seek(start)
+                    remaining = end - start + 1
+                    while remaining:
+                        chunk = stream.read(min(65536, remaining))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        remaining -= len(chunk)
+                return
             if self.path == "/api/status":
                 return self.respond(CONTROL.snapshot())
             self.respond({"error": "Not found"}, 404)
@@ -240,11 +285,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond({"error": "Недопустимый запрос"}, 403)
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 <= length <= 2048:
+            if not 0 <= length <= 40000:
                 raise ValueError("Некорректный запрос")
             data = json.loads(self.rfile.read(length) or b"{}")
             if self.path == "/api/generate":
-                return self.respond(CONTROL.generate())
+                return self.respond(CONTROL.generate(data.get("prompt", "")))
             if self.path == "/api/download":
                 return self.respond(CONTROL.download(data.get("tag", "")))
             self.respond({"error": "Not found"}, 404)

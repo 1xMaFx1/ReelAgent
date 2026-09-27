@@ -81,3 +81,44 @@ def test_busy_cloud_prevents_second_dispatch(tmp_path, monkeypatch):
     monkeypatch.setattr(desktop, "gh", lambda *args, **kwargs: pytest.fail("duplicate dispatch"))
     with pytest.raises(ValueError, match="уже создаётся"):
         controller.generate()
+
+
+def test_custom_prompt_dispatches_without_queue_and_stays_one_argument(monkeypatch, tmp_path):
+    (tmp_path / "launcher.json").write_text('{"repository":"owner/repo"}')
+    control = desktop.Controller(tmp_path)
+    monkeypatch.setattr(control, "snapshot", lambda force: {"busy": False, "remaining": 0})
+    calls = []
+    monkeypatch.setattr(desktop, "gh", lambda *args, **kwargs: calls.append(args))
+    prompt = "Видео про кошек. $(echo test)\nНе менять тему."
+    control.generate(prompt)
+    assert "prompt=" + prompt in calls[0]
+    assert control.pending
+    with pytest.raises(ValueError):
+        control.generate("x" * 6001)
+
+
+def test_organized_folder_downloads_next_to_working_files(tmp_path):
+    working = tmp_path / "Рабочие файлы"
+    working.mkdir()
+    (working / "launcher.json").write_text('{"repository":"owner/repo"}')
+    assert desktop.Controller(working).download_dir == tmp_path / "Готовые ролики"
+
+
+def test_existing_release_keys_are_preserved():
+    plan = WeeklyPlan.load(PLAN)
+    assert plan.entries[0].key == "3d2a50204e67cadd"
+    assert plan.entries[1].key == "96fea55db1f0bd07"
+
+
+def test_install_preserves_hidden_files_and_videos(tmp_path):
+    from scripts.install_desktop import install
+
+    (tmp_path / ".env").write_text("private")
+    videos = tmp_path / "Готовые ролики"
+    videos.mkdir()
+    (videos / "keep.mp4").write_bytes(b"video")
+    working = install(tmp_path)
+    assert (working / ".env").read_text() == "private"
+    assert (videos / "keep.mp4").read_bytes() == b"video"
+    assert (tmp_path / "ReelAgent.app/Contents/MacOS/ReelAgent").is_file()
+    install(tmp_path)  # Organizing again does not nest or lose files.

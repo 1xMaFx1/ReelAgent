@@ -17,6 +17,7 @@ class PromptEntry(BaseModel):
     hour: Literal[8, 12, 17] = 8
     prompt: str = Field(min_length=10, max_length=16000)
     topic: str = Field(min_length=5, max_length=200)
+    media_source: Literal["nasa", "commons"] = "nasa"
     mode: Literal["generate", "anchor", "recap"] = "generate"
     facts: str = Field(default="", max_length=12000)
     sources: list[HttpUrl] = Field(default_factory=list)
@@ -52,6 +53,8 @@ class PromptEntry(BaseModel):
     @property
     def key(self) -> str:
         value = self.model_dump(mode="json", exclude={"day"})
+        if self.media_source == "nasa":
+            value.pop("media_source", None)  # Preserve keys of existing releases.
         return hashlib.sha256(
             json.dumps(value, ensure_ascii=False, sort_keys=True).encode()
         ).hexdigest()[:16]
@@ -61,13 +64,13 @@ class WeeklyPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,60}$")
     start_date: date
-    entries: list[PromptEntry] = Field(min_length=7, max_length=21)
+    entries: list[PromptEntry] = Field(min_length=1, max_length=21)
 
     @model_validator(mode="after")
     def seven_days(self):
         expected = [(day, hour) for day in range(1, 8) for hour in (8, 12, 17)]
         actual = [(entry.day, entry.hour) for entry in self.entries]
-        if actual != expected and actual != [(day, 8) for day in range(1, 8)]:
+        if actual not in (expected, [(day, 8) for day in range(1, 8)], [(1, 8)]):
             raise ValueError("Expected 7 daily entries or 21 entries ordered by day and 08/12/17")
         for day in range(1, 8):
             texts = [e.script.text for e in self.entries if e.day == day and e.script]

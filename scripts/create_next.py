@@ -33,7 +33,7 @@ def release_body(entry, plan, request_id):
     }
     return (
         "Готовый ролик. Нажмите **reel.mp4** в разделе Assets, чтобы скачать.\n\n"
-        "Описание, ключевые слова и источники — в metadata.json. Изображения: NASA.\n\n"
+        "Описание, ключевые слова и источники — в metadata.json.\n\n"
         "<!-- reelagent:" + json.dumps(marker, ensure_ascii=False) + " -->"
     )
 
@@ -45,6 +45,15 @@ async def main():
     repo = repository()
     request_id = os.environ.get("REQUEST_ID") or os.environ["GITHUB_RUN_ID"]
     ready = ready_releases(repo)
+    previous = next((r for r in ready if r.get("request_id") == request_id), None)
+    if previous:
+        print("Этот запрос уже выполнен: " + previous["url"])
+        return
+    prompt = os.environ.get("CUSTOM_PROMPT", "").strip()
+    if prompt:
+        from scripts.custom_prompt import prepare_prompt
+
+        settings, plan = await prepare_prompt(settings, prompt, request_id)
     entry, previous = select_entry(plan, ready, request_id)
     if previous:
         print("Этот запрос уже выполнен: " + previous["url"])

@@ -7,6 +7,10 @@ on:
         description: 'Identifier from the one-click app'
         type: string
         required: false
+      prompt:
+        description: "Свой текстовый промпт (пусто — следующий из очереди)"
+        type: string
+        required: false
 permissions:
   contents: write
 concurrency:
@@ -15,13 +19,15 @@ concurrency:
 jobs:
   create:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 55
     env:
       APP_ENV: cloud
       CONTENT_MODE: prompt_queue
       PROMPT_QUEUE_FILE: prompts/current-week.json
       GH_TOKEN: ${{ github.token }}
       REQUEST_ID: ${{ inputs.request_id }}
+      CUSTOM_PROMPT: ${{ inputs.prompt }}
+      OLLAMA_MODEL: qwen2.5:3b
       TTS_VOICE: ru-RU-DmitryNeural
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +39,17 @@ jobs:
         run: pip install -r requirements.txt
       - name: Install renderer
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Prepare free cloud model
+        if: inputs.prompt != ''
+        run: |
+          curl -fsSL https://ollama.com/install.sh -o /tmp/install-ollama.sh
+          sh /tmp/install-ollama.sh
+          ollama serve > /tmp/ollama.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then break; fi
+            sleep 2
+          done
+          ollama pull qwen2.5:3b
       - name: Create next reel and prepare download
         run: python -m scripts.create_next
       - name: Save failure diagnostics
