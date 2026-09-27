@@ -121,7 +121,31 @@ class Pipeline:
             log.info("Topic: %s", topic.topic)
             script = await llm.generate_script(topic)
             script.topic = topic.topic
-            metadata = await llm.generate_metadata(script)
+            try:
+                metadata = await llm.generate_metadata(script)
+            except (ValueError, RuntimeError):
+                # Valid narration should not be discarded for a metadata formatting failure.
+                import re
+
+                title_words = script.hook.split()[:7]
+                while len(" ".join(title_words)) > 55 and len(title_words) > 1:
+                    title_words.pop()
+                stop = {"почему", "которые", "который", "такое", "этого", "этот", "такие", "когда"}
+                keywords = list(
+                    dict.fromkeys(
+                        word
+                        for word in re.findall(r"[А-Яа-яЁё]{4,}", topic.topic)
+                        if word.lower() not in stop
+                    )
+                )[:5]
+                metadata = Metadata(
+                    title=" ".join(title_words)[:55],
+                    description=", ".join(keywords + ["космос", "наука", "NASA"]),
+                    hashtags=["#космос", "#наука", "#NASA"],
+                )
+                log.warning(
+                    "Metadata fallback: retained valid narration, using source topic keywords"
+                )
             log.info("Script: %s scenes", len(script.scenes))
             db.update(
                 video_id, topic=topic.topic, title=metadata.title, script=script.model_dump_json()

@@ -61,7 +61,14 @@ class FakeComposer:
         return video
 
 
-def test_full_orchestration_and_daily_resume(tmp_path, monkeypatch, script):
+@pytest.mark.parametrize("metadata_fails", [False, True])
+def test_full_orchestration_and_daily_resume(tmp_path, monkeypatch, script, metadata_fails):
+    if metadata_fails:
+
+        async def invalid_metadata(self, script):
+            raise ValueError("Invalid hashtags")
+
+        monkeypatch.setattr(FakeLLM, "generate_metadata", invalid_metadata)
     FakeLLM.script = script
     FakeComposer.calls = 0
     monkeypatch.setattr(module, "GeminiProvider", FakeLLM)
