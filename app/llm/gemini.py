@@ -133,6 +133,9 @@ class GeminiProvider:
             ),
             GeneratedScript,
         )
+        return await self.review_script(script)
+
+    async def review_script(self, script: Script) -> Script:
         review = await self.ask(
             "Проверь сценарий: обычные научные факты, описание устройства техники и космоса "
             "разрешены. safe=true, если нет запрещённого содержания. safe=false только при "

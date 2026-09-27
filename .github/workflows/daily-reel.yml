@@ -34,7 +34,7 @@ jobs:
       APP_ENV: cloud
       LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'ollama' }}
       MEDIA_PROVIDER: nasa
-      OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen3:8b' }}
+      OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}
       CONTENT_BRIEF_FILE: ${{ vars.CONTENT_BRIEF_FILE || '' }}
       EPISODE_FILE: ''
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

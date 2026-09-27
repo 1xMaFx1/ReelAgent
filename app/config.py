@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model: str = "gemini-2.5-flash"
     llm_provider: Literal["gemini", "ollama"] = "gemini"
-    ollama_model: str = "qwen3:8b"
+    ollama_model: str = "qwen2.5:7b"
     content_brief_file: Path | None = None
     pexels_api_key: SecretStr = SecretStr("")
     media_provider: Literal["pexels", "nasa"] = "pexels"

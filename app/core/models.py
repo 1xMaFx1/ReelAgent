@@ -51,6 +51,22 @@ class GeneratedScript(Script):
         return self
 
 
+class NarrationDraft(Model):
+    hook: str = Field(min_length=3, max_length=100)
+    body: str = Field(min_length=350, max_length=1200)
+    ending: str = Field(min_length=3, max_length=150)
+    visual_query: str = Field(min_length=3, max_length=100)
+
+    @model_validator(mode="after")
+    def length(self):
+        words = len((self.hook + " " + self.body + " " + self.ending).split())
+        if not 65 <= words <= 100:
+            raise ValueError(
+                f"Text has {words} words. Required total: 65–100 words. Expand body to 70 words."
+            )
+        return self
+
+
 class Metadata(Model):
     title: str = Field(min_length=3, max_length=100)
     description: str = Field(min_length=10, max_length=3000)

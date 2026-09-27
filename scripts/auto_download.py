@@ -10,6 +10,14 @@ from zoneinfo import ZoneInfo
 from scripts.launch import ROOT, download, gh, repository
 
 
+def write_status(message: str) -> None:
+    folder = ROOT / "Готовые ролики"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "Статус.txt").write_text(
+        datetime.now().strftime("%d.%m.%Y %H:%M") + "\n" + message + "\n", encoding="utf-8"
+    )
+
+
 def request_backup(repo: str, runs: list[dict], now: datetime, local: Path) -> None:
     """One morning recovery if GitHub skipped its timers; respect explicit pauses."""
     if not 390 <= now.hour * 60 + now.minute <= 420:
@@ -104,15 +112,24 @@ def main() -> None:
                 and marker.exists()
                 and marker.read_text() == str(run["databaseId"])
             ):
+                write_status("Ролик за " + today + " готов: " + str(destination))
                 return
             video = download(repo, run["databaseId"])
             if video.parent.name != today:
                 continue
             result = deliver(video, run["databaseId"])
+            write_status("Ролик за " + today + " готов: " + str(result))
             shutil.rmtree(local / "downloads" / str(run["databaseId"]), ignore_errors=True)
             print(f"{datetime.now().isoformat()}: Сохранено {result}", flush=True)
             return
         request_backup(repo, runs, datetime.now(ZoneInfo("Europe/Simferopol")), local)
+        write_status(
+            "Ожидается ролик за "
+            + today
+            + ". Скачивание повторяется каждые пять минут.\nХод создания и ошибки: https://github.com/"
+            + repo
+            + "/actions/workflows/daily-reel.yml"
+        )
 
 
 if __name__ == "__main__":

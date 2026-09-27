@@ -33,7 +33,7 @@ Qwen через Ollama и FFmpeg работают в облаке; на Mac ид
 Python 3.12, httpx, Pydantic, SQLite, edge-tts, FFmpeg. `pytest tests` и `ruff check .`.
 Настройки: app/config.py. Workflow: .github/workflows/daily-reel.yml.
 Защита от дублей: SQLite + единая очередь GitHub Actions; история источников NASA сохраняется.
-Стандартный публичный GitHub runner, облачная CPU-модель Qwen3:8b без платного API.
+Стандартный публичный GitHub runner, облачная CPU-модель Qwen2.5:7b без платного API.
 Макет: 1080×1920, H.264/AAC, 30 fps, 30–45 секунд, русские субтитры.
 Результаты модели требуют редакторского просмотра перед ручной публикацией.
 Модули публикации оставлены в коде, но ежедневный workflow принудительно вызывает generate,

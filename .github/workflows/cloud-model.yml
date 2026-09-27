@@ -10,7 +10,7 @@ jobs:
     env:
       APP_ENV: cloud
       LLM_PROVIDER: ollama
-      OLLAMA_MODEL: qwen3:8b
+      OLLAMA_MODEL: qwen2.5:7b
       CONTENT_BRIEF_FILE: episodes/earth-facts.txt
     steps:
       - uses: actions/checkout@v4
