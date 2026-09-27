@@ -63,29 +63,36 @@ jobs:
           SCHEDULE_EVENT: ${{ github.event.schedule }}
         run: python -m scripts.choose_slot
       - name: Restore state and current slot
+        if: env.PLAN_ACTIVE == 'true'
         id: state
         run: python -m scripts.cloud_state
+      - name: Recover ready video from its public backup if needed
+        if: env.PLAN_ACTIVE == 'true'
+        run: python -m scripts.catalog recover
       - name: Validate weekly Claude packet
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         run: python -m scripts.check_plan
       - name: Install FFmpeg and fonts
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
       - name: Create video from prepared script
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         run: python -m app.main generate
       - name: Create preview
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         run: python -m scripts.preview
       - name: Save public video in approved GitHub Releases
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         run: python -m scripts.release_video
       - name: Prepare Instagram scheduling and durable intent
-        if: env.VERIFY_ONLY != 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY != 'true'
         id: publication
         run: python -m scripts.schedule_instagram prepare
+      - name: Save prepared publication metadata
+        if: env.PLAN_ACTIVE == 'true' && steps.publication.outputs.create == 'true'
+        run: python -m scripts.catalog save
       - name: Checkpoint before remote post creation
-        if: steps.publication.outputs.create == 'true'
+        if: env.PLAN_ACTIVE == 'true' && steps.publication.outputs.create == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: reelagent-state
@@ -93,16 +100,20 @@ jobs:
           path: |
             data/reelagent.db
             data/week-cache/
+            data/catalog/
             output/
           retention-days: 1
       - name: Send ready video to Instagram schedule
-        if: steps.publication.outputs.create == 'true'
+        if: env.PLAN_ACTIVE == 'true' && steps.publication.outputs.create == 'true'
         run: python -m scripts.schedule_instagram submit
       - name: Verify actual Instagram publication
-        if: env.VERIFY_ONLY == 'true'
+        if: env.PLAN_ACTIVE == 'true' && env.VERIFY_ONLY == 'true'
         run: python -m scripts.schedule_instagram verify
+      - name: Update durable video catalog
+        if: always() && env.PLAN_ACTIVE == 'true' && steps.state.outcome == 'success'
+        run: python -m scripts.catalog save
       - name: Save durable state even after a publishing error
-        if: always() && steps.state.outcome == 'success'
+        if: always() && env.PLAN_ACTIVE == 'true' && steps.state.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: reelagent-state
@@ -110,6 +121,7 @@ jobs:
           path: |
             data/reelagent.db
             data/week-cache/
+            data/catalog/
             output/
           retention-days: 1
           if-no-files-found: warn

@@ -16,3 +16,4 @@ data/*.lock
 .local/
 Готовые ролики/
 data/week-cache/
+data/catalog/

@@ -1,5 +1,6 @@
 """Store owner-approved public MP4 assets in GitHub Releases, never in git history."""
 
+import hashlib
 import json
 import os
 import re
@@ -50,6 +51,7 @@ def main():
     if not any(asset["name"] == "reel.mp4" for asset in assets):
         run("release", "upload", tag, str(video), "--repo", repo)
     meta["public_video_url"] = f"https://github.com/{repo}/releases/download/{tag}/reel.mp4"
+    meta["video_sha256"] = hashlib.sha256(video.read_bytes()).hexdigest()
     save_json(meta_path, meta)
     print("Публичная копия MP4 сохранена в Releases")
 
