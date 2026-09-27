@@ -11,6 +11,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,12 +50,56 @@ def safari(url: str) -> None:
         print(url)
 
 
+def connect_buffer(repo: str, key: str) -> None:
+    def query(text: str, variables: dict | None = None) -> dict:
+        req = Request(
+            "https://api.buffer.com",
+            data=json.dumps({"query": text, "variables": variables or {}}).encode(),
+            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+        )
+        with urlopen(req, timeout=60) as response:
+            result = json.load(response)
+        if result.get("errors"):
+            raise RuntimeError("Buffer отклонил запрос. Проверьте ключ и подключение канала.")
+        return result["data"]
+
+    organizations = query("{account{organizations{id}}}")["account"]["organizations"]
+    matches = []
+    for organization in organizations:
+        result = query(
+            "query($input:ChannelsInput!){channels(input:$input){id service serviceId isDisconnected}}",
+            {"input": {"organizationId": organization["id"]}},
+        )
+        matches.extend(
+            channel
+            for channel in result["channels"]
+            if channel["service"] == "youtube"
+            and channel["serviceId"] == "UCr74LNUyePqX4CLS9sI5IPg"
+            and not channel["isDisconnected"]
+        )
+    if len(matches) != 1:
+        raise RuntimeError("В Buffer не найден однозначно ваш подключённый YouTube-канал.")
+    gh("variable", "set", "BUFFER_CHANNEL_ID", "--repo", repo, "--body", matches[0]["id"])
+    print("YouTube-канал проверен и выбран автоматически.")
+
+
 def setup(repo: str) -> None:
+    print("Для создания роликов ключи не нужны: облачная модель Ollama и библиотека NASA.")
+    print("GitHub подключён. Автопубликация выключена.")
+    return
     print("Ключи будут отправлены только в GitHub Secrets вашего ReelAgent.")
     print("Ввод скрыт. Ключи не сохраняются в файлах и не попадают в публичный код.")
     variables = json.loads(gh("variable", "list", "--repo", repo, "--json", "name,value"))
     provider = next((v["value"] for v in variables if v["name"] == "LLM_PROVIDER"), "gemini")
     keys = [("PEXELS_API_KEY", "https://www.pexels.com/api/")]
+    keys.extend(
+        [
+            ("BUFFER_API_KEY", "https://publish.buffer.com/settings/api"),
+            ("CLOUDINARY_CLOUD_NAME", "https://console.cloudinary.com/"),
+            ("CLOUDINARY_API_KEY", "https://console.cloudinary.com/"),
+            ("CLOUDINARY_API_SECRET", "https://console.cloudinary.com/"),
+        ]
+    )
     if provider != "ollama":
         print("Для Gemini используйте проект Free tier без подключённого биллинга.")
         keys.insert(0, ("GEMINI_API_KEY", "https://aistudio.google.com/apikey"))
@@ -66,6 +111,8 @@ def setup(repo: str) -> None:
         if value:
             gh("secret", "set", name, "--repo", repo, input_text=value)
             print("Сохранено в GitHub Secrets.")
+            if name == "BUFFER_API_KEY":
+                connect_buffer(repo, value)
     print("\nГотово. Запуск: файл «Запустить ReelAgent.command».")
 
 
@@ -178,7 +225,7 @@ def main() -> None:
             "--repo",
             repo,
             "--field",
-            f"mode={'generate' if args.generate_only else 'run'}",
+            "mode=generate",
             "--field",
             f"request_id={request_id}",
         )
@@ -194,7 +241,10 @@ def main() -> None:
         print("\nГотово: " + str(video))
         for name in ("youtube", "instagram"):
             if meta.get(name):
-                print(f"{name}: опубликовано ({meta[name]})")
+                if str(meta[name]).startswith("buffer:"):
+                    print(f"{name}: поставлено в расписание на 08:00, ещё не опубликовано")
+                else:
+                    print(f"{name}: опубликовано ({meta[name]})")
             elif meta.get("publication_errors", {}).get(name):
                 print(f"{name}: публикация требует проверки; готовый MP4 сохранён")
             else:

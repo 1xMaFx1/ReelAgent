@@ -52,6 +52,22 @@ class Metadata(Model):
         return self
 
 
+class SocialCopy(Model):
+    title: str = Field(min_length=3, max_length=55)
+    keywords: list[str] = Field(min_length=3, max_length=8)
+    hashtags: list[str] = Field(min_length=3, max_length=6)
+
+    @model_validator(mode="after")
+    def validate_copy(self):
+        import re
+
+        if any(not re.fullmatch(r"[\w\- ]{2,60}", word) for word in self.keywords):
+            raise ValueError("Keywords must be short words or phrases without links")
+        if any(not re.fullmatch(r"#\w{2,40}", tag) for tag in self.hashtags):
+            raise ValueError("Invalid hashtag")
+        return self
+
+
 class SceneQueries(Model):
     queries: list[str] = Field(min_length=4, max_length=7)
 
@@ -66,6 +82,7 @@ class Status(StrEnum):
     GENERATING = "GENERATING"
     RENDERING = "RENDERING"
     READY = "READY"
+    SCHEDULED = "SCHEDULED"
     PUBLISHED = "PUBLISHED"
     PARTIALLY_PUBLISHED = "PARTIALLY_PUBLISHED"
     FAILED = "FAILED"

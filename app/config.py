@@ -12,8 +12,10 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model: str = "gemini-2.5-flash"
     llm_provider: Literal["gemini", "ollama"] = "gemini"
-    ollama_model: str = "qwen3:4b"
+    ollama_model: str = "qwen3:8b"
+    content_brief_file: Path | None = None
     pexels_api_key: SecretStr = SecretStr("")
+    media_provider: Literal["pexels", "nasa"] = "pexels"
     tts_voice: str = "ru-RU-DmitryNeural"
     video_width: int = Field(default=1080, ge=180)
     video_height: int = Field(default=1920, ge=320)
@@ -29,6 +31,13 @@ class Settings(BaseSettings):
     youtube_client_secret: SecretStr = SecretStr("")
     youtube_refresh_token: SecretStr = SecretStr("")
     youtube_privacy_status: Literal["public", "private", "unlisted"] = "public"
+    youtube_publisher: Literal["direct", "buffer"] = "direct"
+    youtube_channel_id: str = "UCr74LNUyePqX4CLS9sI5IPg"
+    buffer_api_key: SecretStr = SecretStr("")
+    buffer_channel_id: str = ""
+    publication_timezone: str = "Europe/Simferopol"
+    publication_hour: int = Field(default=8, ge=0, le=23)
+    publication_minute: int = Field(default=0, ge=0, le=59)
     instagram_access_token: SecretStr = SecretStr("")
     instagram_account_id: str = ""
     instagram_api_version: str = "v24.0"
@@ -42,7 +51,7 @@ class Settings(BaseSettings):
     episode_file: Path | None = None
     base_dir: Path = Path(".")
 
-    @field_validator("episode_file", mode="before")
+    @field_validator("episode_file", "content_brief_file", mode="before")
     @classmethod
     def empty_episode(cls, value):
         return value or None
@@ -63,15 +72,12 @@ class Settings(BaseSettings):
         return self.base_dir.resolve() / name
 
     def require_generation_keys(self) -> None:
-        missing = [
-            name
-            for name in (
-                ("gemini_api_key", "pexels_api_key")
-                if self.llm_provider == "gemini"
-                else ("pexels_api_key",)
-            )
-            if not getattr(self, name).get_secret_value()
-        ]
+        required = []
+        if self.llm_provider == "gemini":
+            required.append("gemini_api_key")
+        if self.media_provider == "pexels":
+            required.append("pexels_api_key")
+        missing = [name for name in required if not getattr(self, name).get_secret_value()]
         if missing:
             raise ValueError("Missing settings: " + ", ".join(x.upper() for x in missing))
 

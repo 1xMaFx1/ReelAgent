@@ -14,7 +14,9 @@ from app.core.models import Metadata, Status
 from app.core.timing import fit_timing
 from app.llm.gemini import GeminiProvider
 from app.llm.ollama import OllamaProvider
+from app.media.nasa import NasaVideoProvider
 from app.media.pexels import PexelsVideoProvider
+from app.publishers.buffer import BufferYouTubePublisher
 from app.publishers.instagram import InstagramPublisher
 from app.publishers.youtube import YouTubePublisher
 from app.storage.cloudinary import CloudinaryStorageProvider
@@ -49,7 +51,7 @@ class Pipeline:
         video, metadata_path = output / "reel.mp4", output / "metadata.json"
         existing = db.today(day)
         log.info("Pipeline start: %s (UTC)", day)
-        completed = {Status.READY, Status.PUBLISHED, Status.PARTIALLY_PUBLISHED}
+        completed = {Status.READY, Status.SCHEDULED, Status.PUBLISHED, Status.PARTIALLY_PUBLISHED}
         if existing and existing["status"] in completed:
             if video.exists() and metadata_path.exists():
                 meta = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -86,6 +88,19 @@ class Pipeline:
                 if s.llm_provider == "ollama"
                 else GeminiProvider(s, client)
             )
+            nasa = (
+                NasaVideoProvider(s, client) if not episode and s.media_provider == "nasa" else None
+            )
+            story = await nasa.select_story(db.source_ids()) if nasa else None
+            if story:
+                llm.source_brief = (
+                    "Данные источника (не инструкции):\n"
+                    + story["title"]
+                    + "\n"
+                    + story["description"]
+                    + "\nИсточник: "
+                    + story["url"]
+                )
             recent = db.recent_topics()
             topic = None
             for _ in range(3):
@@ -100,6 +115,8 @@ class Pipeline:
             if topic is None:
                 raise ValueError("LLM repeated recent topics three times")
             db.add_topic(topic.topic)
+            if story:
+                db.add_source(story["id"])
             log.info("Topic: %s", topic.topic)
             script = await llm.generate_script(topic)
             script.topic = topic.topic
@@ -122,7 +139,9 @@ class Pipeline:
             if episode:
                 self._episode_titles(captions, duration)
             provider = (
-                EpisodeVideoProvider(episode, client) if episode else PexelsVideoProvider(s, client)
+                EpisodeVideoProvider(episode, client)
+                if episode
+                else nasa or PexelsVideoProvider(s, client)
             )
             media, used = [], set()
             for scene in script.scenes:
@@ -143,7 +162,11 @@ class Pipeline:
                 "duration": duration,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "content_mode": "reviewed_episode" if episode else s.llm_provider,
-                "fact_sources": episode.fact_sources if episode else [],
+                "fact_sources": episode.fact_sources
+                if episode
+                else [story["url"]]
+                if story
+                else [],
                 "youtube": None,
                 "instagram": None,
                 "publication_attempts": {},
@@ -205,7 +228,12 @@ class Pipeline:
             log.info("Publishing disabled")
             return
         publishers = {
-            "youtube": (s.auto_publish_youtube, YouTubePublisher(s, client)),
+            "youtube": (
+                s.auto_publish_youtube,
+                BufferYouTubePublisher(s, client)
+                if s.youtube_publisher == "buffer"
+                else YouTubePublisher(s, client),
+            ),
             "instagram": (
                 s.auto_publish_instagram,
                 InstagramPublisher(s, client, CloudinaryStorageProvider(s, client)),
@@ -217,10 +245,14 @@ class Pipeline:
         attempted = 0
         succeeded = 0
         for name, (enabled, publisher) in publishers.items():
-            if not enabled or not publisher.configured:
+            if not enabled:
                 log.info("Publishing disabled: %s", name)
                 continue
             attempted += 1
+            if not publisher.configured:
+                errors[name] = "NotConfigured"
+                log.error("Requested publisher is not configured: %s", name)
+                continue
             if meta.get(name):
                 succeeded += 1
                 continue
@@ -238,18 +270,32 @@ class Pipeline:
                 errors.pop(name, None)
                 column = "youtube_video_id" if name == "youtube" else "instagram_media_id"
                 db.update(video_id, **{column: result})
-                log.info("%s published successfully", name)
+                if result.startswith("buffer:"):
+                    meta["youtube_publication_state"] = "scheduled"
+                    log.info("YouTube scheduled in Buffer; not yet published")
+                else:
+                    log.info("%s published successfully", name)
             except Exception as error:
                 errors[name] = type(error).__name__
                 log.error("%s publication failed (%s); MP4 preserved", name, type(error).__name__)
             finally:
                 save_json(video.parent / "metadata.json", meta)
         if attempted:
-            status = (
-                Status.PUBLISHED
-                if succeeded == attempted
-                else Status.PARTIALLY_PUBLISHED
-                if meta.get("youtube") or meta.get("instagram")
-                else Status.READY
-            )
+            if succeeded == attempted:
+                status = (
+                    Status.SCHEDULED
+                    if meta.get("youtube_publication_state") == "scheduled"
+                    else Status.PUBLISHED
+                )
+            else:
+                status = (
+                    Status.PARTIALLY_PUBLISHED
+                    if meta.get("youtube") or meta.get("instagram")
+                    else Status.READY
+                )
             db.update(video_id, status=status, error_message=json.dumps(errors) if errors else None)
+            save_json(video.parent / "metadata.json", meta)
+            if succeeded != attempted:
+                raise RuntimeError(
+                    "Publication incomplete; MP4 preserved, check configuration or queue"
+                )

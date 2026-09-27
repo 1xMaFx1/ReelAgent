@@ -8,7 +8,7 @@ import httpx
 from pydantic import BaseModel
 
 from app.config import Settings
-from app.core.models import Metadata, SafetyReview, SceneQueries, Script, Topic
+from app.core.models import Metadata, SafetyReview, SceneQueries, Script, SocialCopy, Topic
 from app.utils.retry import transient
 from app.utils.text import parse_json
 
@@ -25,6 +25,20 @@ class GeminiProvider:
     def __init__(self, settings: Settings, client: httpx.AsyncClient):
         self.settings, self.client = settings, client
 
+    def context(self) -> str:
+        brief = getattr(self, "source_brief", "")
+        if not brief and self.settings.content_brief_file:
+            brief = self.settings.path(str(self.settings.content_brief_file)).read_text(
+                encoding="utf-8"
+            )
+        if not brief:
+            return POLICY
+        return (
+            POLICY + " Выбирай тему и пиши сценарий ТОЛЬКО по фактам ниже. "
+            "Не добавляй числа, причинные объяснения или выводы, которых нет в источнике. "
+            "Не повторяй одну мысль разными словами.\n" + brief + "\nЗАДАНИЕ:\n"
+        )
+
     async def ask(self, prompt: str, model: type[T]) -> T:
         if not self.settings.gemini_api_key.get_secret_value():
             raise ValueError("GEMINI_API_KEY is required")
@@ -33,7 +47,7 @@ class GeminiProvider:
             + quote(self.settings.gemini_model, safe="")
             + ":generateContent"
         )
-        instruction = POLICY + prompt
+        instruction = self.context() + prompt
         # One budget across transport retries and invalid JSON repairs.
         from tenacity import AsyncRetrying, retry_if_exception, stop_after_attempt, wait_exponential
 
@@ -70,7 +84,7 @@ class GeminiProvider:
                         )
                     except (ValueError, KeyError, IndexError) as error:
                         instruction = (
-                            POLICY
+                            self.context()
                             + prompt
                             + (
                                 " Предыдущий ответ не прошел проверку. Верни корректный JSON строго по схеме."
@@ -124,10 +138,16 @@ class GeminiProvider:
         return script
 
     async def generate_metadata(self, script: Script) -> Metadata:
-        return await self.ask(
-            "Создай честный title до 90 символов, description и 3–6 hashtags "
-            "для сценария, без кликбейта и призывов подписаться: " + script.text,
-            Metadata,
+        copy = await self.ask(
+            "Создай короткое цепляющее название: 3–7 слов, максимум 55 символов. "
+            "Используй любопытство, вопрос или конкретный факт из сценария, без обмана, "
+            "ложных обещаний, крика заглавными буквами и просьб подписаться. "
+            "keywords: 3–8 ключевых слов или коротких фраз, не предложения. "
+            "hashtags: 3–6 релевантных хэштегов. Никакой рекламы. Сценарий: " + script.text,
+            SocialCopy,
+        )
+        return Metadata(
+            title=copy.title, description=", ".join(copy.keywords), hashtags=copy.hashtags
         )
 
     async def generate_scene_queries(self, script: Script) -> SceneQueries:

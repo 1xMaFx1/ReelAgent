@@ -6,7 +6,7 @@ import logging
 import httpx
 from pydantic import ValidationError
 
-from app.llm.gemini import POLICY, GeminiProvider, T
+from app.llm.gemini import GeminiProvider, T
 from app.utils.text import parse_json
 
 
@@ -14,8 +14,9 @@ class OllamaProvider(GeminiProvider):
     # Reuse the provider-independent prompts and public generation methods.
     async def ask(self, prompt: str, model: type[T]) -> T:
         self.settings.require_cloud()
-        prompt += "\nJSON schema (соблюдай все ограничения длины, числа сцен и полей): " + json.dumps(
-            model.model_json_schema(), ensure_ascii=False
+        prompt += (
+            "\nJSON schema (соблюдай все ограничения длины, числа сцен и полей): "
+            + json.dumps(model.model_json_schema(), ensure_ascii=False)
         )
         instruction = prompt
         for attempt in range(3):
@@ -25,7 +26,7 @@ class OllamaProvider(GeminiProvider):
                     timeout=900,
                     json={
                         "model": self.settings.ollama_model,
-                        "system": POLICY + " Верни только JSON по заданной схеме.",
+                        "system": self.context() + " Верни только JSON по заданной схеме.",
                         "prompt": instruction,
                         "format": model.model_json_schema(),
                         "stream": False,

@@ -21,11 +21,22 @@ class Database:
             id INTEGER PRIMARY KEY, topic TEXT NOT NULL, normalized TEXT NOT NULL UNIQUE,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS sources (source_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
         """)
         self.connection.commit()
 
     def close(self) -> None:
         self.connection.close()
+
+    def source_ids(self) -> set[str]:
+        return {row[0] for row in self.connection.execute("SELECT source_id FROM sources")}
+
+    def add_source(self, source_id: str) -> None:
+        with self.connection:
+            self.connection.execute(
+                "INSERT OR IGNORE INTO sources VALUES (?,?)",
+                (source_id, datetime.now(timezone.utc).isoformat()),
+            )
 
     def today(self, day: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM videos WHERE day=?", (day,)).fetchone()

@@ -2,6 +2,7 @@ import asyncio
 import json
 
 import httpx
+import pytest
 
 import app.core.pipeline as module
 from app.config import Settings
@@ -129,8 +130,10 @@ def test_publication_failure_isolated(tmp_path, monkeypatch):
     async def check():
         async with httpx.AsyncClient() as client:
             pipeline = Pipeline(settings)
-            await pipeline._publish(db, video_id, client, video, meta, True)
-            await pipeline._publish(db, video_id, client, video, meta, True)
+            with pytest.raises(RuntimeError, match="Publication incomplete"):
+                await pipeline._publish(db, video_id, client, video, meta, True)
+            with pytest.raises(RuntimeError, match="Publication incomplete"):
+                await pipeline._publish(db, video_id, client, video, meta, True)
 
     asyncio.run(check())
     assert calls == ["youtube", "instagram"]
