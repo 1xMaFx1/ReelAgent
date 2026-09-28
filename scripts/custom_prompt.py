@@ -36,9 +36,20 @@ class SpokenNarration(NarrationDraft):
         return " ".join(value.split())
 
 
+class ShortCopy(SocialCopy):
+    @field_validator("title", mode="before")
+    @classmethod
+    def compact_title(cls, value):
+        if isinstance(value, str) and ":" in value:
+            lead = value.split(":", 1)[0].strip()
+            if len(lead) >= 3:
+                return lead
+        return value
+
+
 class EpisodeDraft(Model):
     narration: SpokenNarration
-    social_copy: SocialCopy = Field(alias="copy")
+    social_copy: ShortCopy = Field(alias="copy")
 
 
 async def prepare_prompt(settings, prompt, request_id):
@@ -52,7 +63,8 @@ async def prepare_prompt(settings, prompt, request_id):
             "body — 70–80 русских слов, ending — краткий вывод в одном предложении. "
             "В narration строго запрещены хэштеги, эмодзи и подписи к посту. "
             "visual_query — 1–3 английских слова для поиска фотографий по теме. "
-            "copy: title — цепляющее название до 55 символов, keywords — 3–8 ключевых фраз, "
+            "copy: title — законченная короткая фраза из 3–5 слов, до 45 символов. "
+            "keywords — 3–8 ключевых фраз, "
             "hashtags — 3–6 хэштегов только в copy. Не придумывай точные цифры и цитаты. "
             "Не включай инструкции о монтаже в озвучку. Запрос пользователя:\n" + prompt,
             EpisodeDraft,

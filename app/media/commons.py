@@ -54,6 +54,12 @@ class CommonsProvider:
     async def fetch(self, query, destination, used):
         try:
             candidates = await self.search(query)
+            # A descriptive three-word query can be too narrow. Keep the main
+            # subject and first modifier; never switch to an unrelated theme.
+            if len(candidates) < 4 and len(query.split()) > 2:
+                broader = await self.search(" ".join(query.split()[:2]))
+                seen = {page["pageid"] for page in candidates}
+                candidates = candidates + [page for page in broader if page["pageid"] not in seen]
         except (httpx.HTTPError, ValueError) as error:
             logging.getLogger(__name__).warning(
                 "Commons lookup unavailable: %s", type(error).__name__
