@@ -90,7 +90,7 @@ async def prepare_prompt(settings, prompt, request_id):
         prompt=prompt.strip(),
         topic=draft.social_copy.title,
         script=script,
-        copy=draft.social_copy,
+        copy=SocialCopy.model_validate(draft.social_copy.model_dump()),
         media_source="commons",
         min_seconds=25,
         max_seconds=55,
