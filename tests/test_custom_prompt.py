@@ -53,3 +53,24 @@ def test_no_images_produces_explicit_graphics_not_unrelated_photos(monkeypatch, 
     assert public_domain({"extmetadata": {"LicenseShortName": {"value": "CC0"}}})
     assert not public_domain({"extmetadata": {"LicenseShortName": {"value": "CC BY-SA 4.0"}}})
     assert not public_domain({})
+
+
+def test_narration_has_no_spoken_hashtags_and_requires_english_search():
+    from pydantic import ValidationError
+
+    from scripts.custom_prompt import SpokenNarration
+
+    data = {
+        "hook": "Почему кошки любят коробки? 🐱",
+        "body": " ".join(
+            ["Кошка спокойно изучает новое место и наблюдает за окружающим миром."] * 7
+        )
+        + " #кошки 📦",
+        "ending": "Это место для отдыха. ✨",
+        "visual_query": "cat cardboard box",
+    }
+    narration = SpokenNarration.model_validate(data)
+    assert "#" not in narration.body and "📦" not in narration.body
+    assert "🐱" not in narration.hook
+    with pytest.raises(ValidationError):
+        SpokenNarration.model_validate({**data, "visual_query": "кошка коробка"})

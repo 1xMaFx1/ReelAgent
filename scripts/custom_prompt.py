@@ -1,9 +1,10 @@
 """Turn a user's plain-text brief into one renderable episode on the cloud runner."""
 
+import re
 from datetime import date
 
 import httpx
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.core.models import Model, NarrationDraft, Scene, Script, SocialCopy
 from app.core.prompt_queue import PromptEntry, WeeklyPlan
@@ -20,8 +21,23 @@ class PromptModel(OllamaProvider):
         )
 
 
+class SpokenNarration(NarrationDraft):
+    visual_query: str = Field(
+        min_length=2, max_length=80, pattern=r"^[A-Za-z][A-Za-z0-9 ,\'-]{1,79}$"
+    )
+
+    @field_validator("hook", "body", "ending", mode="before")
+    @classmethod
+    def spoken_words_only(cls, value):
+        if not isinstance(value, str):
+            return value
+        value = re.sub(r"#\w+", "", value)
+        value = re.sub(r"[^\w\s.,!?;:—–\-«»\"'()]", "", value)
+        return " ".join(value.split())
+
+
 class EpisodeDraft(Model):
-    narration: NarrationDraft
+    narration: SpokenNarration
     social_copy: SocialCopy = Field(alias="copy")
 
 
@@ -33,10 +49,11 @@ async def prepare_prompt(settings, prompt, request_id):
         draft = await provider.ask(
             "Сделай один русский рилс по запросу пользователя ниже. "
             "Соблюдай тему и пожелания к подаче. narration: hook — короткий хук, "
-            "body — 70–80 русских слов, ending — краткий вывод. "
+            "body — 70–80 русских слов, ending — краткий вывод в одном предложении. "
+            "В narration строго запрещены хэштеги, эмодзи и подписи к посту. "
             "visual_query — 1–3 английских слова для поиска фотографий по теме. "
             "copy: title — цепляющее название до 55 символов, keywords — 3–8 ключевых фраз, "
-            "hashtags — 3–6 хэштегов. Не придумывай цифры или факты вне источника. "
+            "hashtags — 3–6 хэштегов только в copy. Не придумывай точные цифры и цитаты. "
             "Не включай инструкции о монтаже в озвучку. Запрос пользователя:\n" + prompt,
             EpisodeDraft,
         )

@@ -1,6 +1,7 @@
 """Keyless public-domain photographs, with an explicit graphic fallback."""
 
 import html
+import logging
 import re
 from urllib.parse import urlparse
 
@@ -53,7 +54,10 @@ class CommonsProvider:
     async def fetch(self, query, destination, used):
         try:
             candidates = await self.search(query)
-        except (httpx.HTTPError, ValueError):
+        except (httpx.HTTPError, ValueError) as error:
+            logging.getLogger(__name__).warning(
+                "Commons lookup unavailable: %s", type(error).__name__
+            )
             candidates = []
         for page in candidates:
             identifier = str(page["pageid"])
