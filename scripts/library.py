@@ -58,4 +58,8 @@ def releases(repo, root=ROOT):
 
 
 def ready_releases(repo, root=ROOT):
-    return [info for release in releases(repo, root) if (info := release_info(release))]
+    return sorted(
+        [info for release in releases(repo, root) if (info := release_info(release))],
+        key=lambda item: item.get("created_at") or "",
+        reverse=True,
+    )

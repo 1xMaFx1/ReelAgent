@@ -2,6 +2,7 @@
 
 import argparse
 import plistlib
+import shutil
 from pathlib import Path
 
 
@@ -21,6 +22,9 @@ def install(folder):
     executable = contents / "MacOS/ReelAgent"
     executable.parent.mkdir(parents=True, exist_ok=True)
     (contents / "Resources").mkdir(exist_ok=True)
+    icon = working / "assets/ReelAgent.icns"
+    if icon.is_file():
+        shutil.copy2(icon, contents / "Resources/ReelAgent.icns")
     (contents / "Info.plist").write_bytes(
         plistlib.dumps(
             {
@@ -31,6 +35,7 @@ def install(folder):
                 "CFBundleShortVersionString": "2.0",
                 "CFBundlePackageType": "APPL",
                 "CFBundleExecutable": "ReelAgent",
+                "CFBundleIconFile": "ReelAgent",
                 "LSUIElement": True,
             }
         )
