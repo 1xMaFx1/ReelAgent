@@ -74,3 +74,51 @@ def test_narration_has_no_spoken_hashtags_and_requires_english_search():
     assert "🐱" not in narration.hook
     with pytest.raises(ValidationError):
         SpokenNarration.model_validate({**data, "visual_query": "кошка коробка"})
+
+
+def test_thumbnail_host_is_downloaded_and_unrelated_titles_are_skipped(tmp_path):
+    import httpx
+
+    def respond(request):
+        if request.url.host == "commons.wikimedia.org":
+            pages = {}
+            for number, title in [
+                (1, "File:Adventure of cardboard box.jpg"),
+                (2, "File:Cat into the box.jpg"),
+            ]:
+                pages[str(number)] = {
+                    "pageid": number,
+                    "title": title,
+                    "imageinfo": [
+                        {
+                            "mime": "image/jpeg",
+                            "thumburl": "https://thumb.wikimedia.org/cat.jpg",
+                            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Cat_into_the_box.jpg",
+                            "extmetadata": {"LicenseShortName": {"value": "Public domain"}},
+                        }
+                    ],
+                }
+            return httpx.Response(200, json={"query": {"pages": pages}})
+        assert request.url.host == "thumb.wikimedia.org"
+        return httpx.Response(200, content=b"photo-data")
+
+    async def check():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            media = await CommonsProvider(None, client).fetch(
+                "cat cardboard box", tmp_path / "cat", set()
+            )
+            assert media.source_id == "2"
+            assert media.path.read_bytes() == b"photo-data"
+
+    asyncio.run(check())
+
+
+def test_truncated_ending_is_removed():
+    from scripts.custom_prompt import SpokenNarration
+
+    assert (
+        SpokenNarration.spoken_words_only(
+            "Коробка — уютное укрытие. Пусть кошка чувствует себя и в"
+        )
+        == "Коробка — уютное укрытие."
+    )

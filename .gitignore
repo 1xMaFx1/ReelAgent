@@ -17,3 +17,5 @@ data/*.lock
 Готовые ролики/
 data/week-cache/
 data/catalog/
+
+data/test-videos/
