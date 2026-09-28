@@ -33,7 +33,14 @@ class SpokenNarration(NarrationDraft):
             return value
         value = re.sub(r"#\w+", "", value)
         value = re.sub(r"[^\w\s.,!?;:—–\-«»\"'()]", "", value)
-        return " ".join(value.split())
+        value = " ".join(value.split())
+        if value and value[-1] not in ".!?":
+            endings = list(re.finditer(r"[.!?](?:\s|$)", value))
+            if endings:
+                value = value[: endings[-1].start() + 1]
+            else:
+                value += "."
+        return value
 
 
 class ShortCopy(SocialCopy):

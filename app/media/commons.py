@@ -22,6 +22,8 @@ def public_domain(info):
 class CommonsProvider:
     def __init__(self, settings, client):
         self.client = client
+        if client is not None:
+            client.headers["User-Agent"] = USER_AGENT
         self.fallback = ""
         self.cache = {}
 
@@ -68,19 +70,24 @@ class CommonsProvider:
         for page in candidates:
             identifier = str(page["pageid"])
             info = page["imageinfo"][0]
+            subject = query.split()[0].lower()
+            title_words = page.get("title", "").replace("_", " ").lower()
+            if not re.search(r"\b" + re.escape(subject) + r"s?\b", title_words):
+                continue
             url = info.get("thumburl") or info.get("url", "")
             parsed = urlparse(url)
             if (
                 identifier in used
                 or parsed.scheme != "https"
-                or parsed.hostname != "upload.wikimedia.org"
+                or parsed.hostname not in {"upload.wikimedia.org", "thumb.wikimedia.org"}
                 or info.get("mime") not in {"image/jpeg", "image/png"}
             ):
                 continue
             path = destination.with_suffix(".jpg" if info["mime"] == "image/jpeg" else ".png")
             try:
                 await download(self.client, url, path)
-            except (httpx.HTTPError, ValueError):
+            except (httpx.HTTPError, ValueError) as error:
+                logging.getLogger(__name__).warning("Photo unavailable: %s", type(error).__name__)
                 continue
             used.add(identifier)
             artist = info.get("extmetadata", {}).get("Artist", {}).get("value", "Public domain")

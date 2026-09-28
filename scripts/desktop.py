@@ -71,7 +71,7 @@ class Controller:
             else "Готов к работе"
         )
         if not active and not self.pending and not remaining:
-            state = "Промпты закончились — добавьте новый пакет"
+            state = "Очередь закончилась — введите свой промпт"
         if (
             not active
             and not self.pending
@@ -110,7 +110,7 @@ class Controller:
             if state["busy"]:
                 raise ValueError("Ролик уже создаётся. Дождитесь завершения.")
             if not prompt and not state["remaining"]:
-                raise ValueError("Нужен новый пакет промптов")
+                raise ValueError("Введите свой промпт или добавьте сценарии в очередь")
             request = uuid.uuid4().hex
             gh(
                 "workflow",
